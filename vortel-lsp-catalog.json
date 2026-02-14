@@ -1,0 +1,9301 @@
+{
+  "source": "languages.toml",
+  "servers_count": 181,
+  "languages_count": 325,
+  "servers": {
+    "actions-language-server": {
+      "name": "actions-language-server",
+      "command": "actions-languageserver",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ada-gpr-language-server": {
+      "name": "ada-gpr-language-server",
+      "command": "ada_language_server",
+      "args": [
+        "--language-gpr"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ada-language-server": {
+      "name": "ada-language-server",
+      "command": "ada_language_server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "als": {
+      "name": "als",
+      "command": "als",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "amber-lsp": {
+      "name": "amber-lsp",
+      "command": "amber-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ameba-ls": {
+      "name": "ameba-ls",
+      "command": "ameba-ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "angular": {
+      "name": "angular",
+      "command": "ngserver",
+      "args": [
+        "--stdio",
+        "--tsProbeLocations",
+        ".",
+        "--ngProbeLocations",
+        "."
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ansible-language-server": {
+      "name": "ansible-language-server",
+      "command": "ansible-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "asm-lsp": {
+      "name": "asm-lsp",
+      "command": "asm-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "astro-ls": {
+      "name": "astro-ls",
+      "command": "astro-ls",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {
+        "typescript": {
+          "tsdk": "node_modules/typescript/lib"
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "awk-language-server": {
+      "name": "awk-language-server",
+      "command": "awk-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "basedpyright": {
+      "name": "basedpyright",
+      "command": "basedpyright-langserver",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {},
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "bash-language-server": {
+      "name": "bash-language-server",
+      "command": "bash-language-server",
+      "args": [
+        "start"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "bass": {
+      "name": "bass",
+      "command": "bass",
+      "args": [
+        "--lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "beancount-language-server": {
+      "name": "beancount-language-server",
+      "command": "beancount-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "bicep-langserver": {
+      "name": "bicep-langserver",
+      "command": "bicep-langserver",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "bitbake-language-server": {
+      "name": "bitbake-language-server",
+      "command": "bitbake-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "blueprint-compiler": {
+      "name": "blueprint-compiler",
+      "command": "blueprint-compiler",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "buf": {
+      "name": "buf",
+      "command": "buf",
+      "args": [
+        "lsp",
+        "serve",
+        "--timeout",
+        "0"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "c3-lsp": {
+      "name": "c3-lsp",
+      "command": "c3-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "cairo-language-server": {
+      "name": "cairo-language-server",
+      "command": "cairo-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "circom-lsp": {
+      "name": "circom-lsp",
+      "command": "circom-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "cl-lsp": {
+      "name": "cl-lsp",
+      "command": "cl-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "clangd": {
+      "name": "clangd",
+      "command": "clangd",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "clarinet": {
+      "name": "clarinet",
+      "command": "clarinet",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "clojure-lsp": {
+      "name": "clojure-lsp",
+      "command": "clojure-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "cmake-language-server": {
+      "name": "cmake-language-server",
+      "command": "cmake-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "codeql": {
+      "name": "codeql",
+      "command": "codeql",
+      "args": [
+        "execute",
+        "language-server",
+        "--check-errors=ON_CHANGE"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "commit-lsp": {
+      "name": "commit-lsp",
+      "command": "commit-lsp",
+      "args": [
+        "run"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "crystalline": {
+      "name": "crystalline",
+      "command": "crystalline",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "cs": {
+      "name": "cs",
+      "command": "cs",
+      "args": [
+        "launch",
+        "--contrib",
+        "smithy-language-server",
+        "--",
+        "0"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "csharp-ls": {
+      "name": "csharp-ls",
+      "command": "csharp-ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "cuelsp": {
+      "name": "cuelsp",
+      "command": "cuelsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "dart": {
+      "name": "dart",
+      "command": "dart",
+      "args": [
+        "language-server",
+        "--client-id=helix"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "dhall-lsp-server": {
+      "name": "dhall-lsp-server",
+      "command": "dhall-lsp-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "djlsp": {
+      "name": "djlsp",
+      "command": "djlsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "docker-compose-langserver": {
+      "name": "docker-compose-langserver",
+      "command": "docker-compose-langserver",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "docker-langserver": {
+      "name": "docker-langserver",
+      "command": "docker-langserver",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "docker-language-server": {
+      "name": "docker-language-server",
+      "command": "docker-language-server",
+      "args": [
+        "start",
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "dot-language-server": {
+      "name": "dot-language-server",
+      "command": "dot-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "dts-lsp": {
+      "name": "dts-lsp",
+      "command": "dts-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "earthlyls": {
+      "name": "earthlyls",
+      "command": "earthlyls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "eiffel-language-server": {
+      "name": "eiffel-language-server",
+      "command": "eiffel-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "elixir-ls": {
+      "name": "elixir-ls",
+      "command": "elixir-ls",
+      "args": [],
+      "environment": {},
+      "config": {
+        "elixirLS": {
+          "dialyzerEnabled": false
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "elm-language-server": {
+      "name": "elm-language-server",
+      "command": "elm-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "elp": {
+      "name": "elp",
+      "command": "elp",
+      "args": [
+        "server"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "elvish": {
+      "name": "elvish",
+      "command": "elvish",
+      "args": [
+        "-lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ember-language-server": {
+      "name": "ember-language-server",
+      "command": "ember-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "erlang-ls": {
+      "name": "erlang-ls",
+      "command": "erlang_ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "expert": {
+      "name": "expert",
+      "command": "expert",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "fennel-ls": {
+      "name": "fennel-ls",
+      "command": "fennel-ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "fish-lsp": {
+      "name": "fish-lsp",
+      "command": "fish-lsp",
+      "args": [
+        "start"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "forc": {
+      "name": "forc",
+      "command": "forc",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "forth-lsp": {
+      "name": "forth-lsp",
+      "command": "forth-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "fortls": {
+      "name": "fortls",
+      "command": "fortls",
+      "args": [
+        "--lowercase_intrinsics"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "fsharp-ls": {
+      "name": "fsharp-ls",
+      "command": "fsautocomplete",
+      "args": [],
+      "environment": {},
+      "config": {
+        "AutomaticWorkspaceInit": true
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "gitlab-ci-ls": {
+      "name": "gitlab-ci-ls",
+      "command": "gitlab-ci-ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "gleam": {
+      "name": "gleam",
+      "command": "gleam",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "glsl_analyzer": {
+      "name": "glsl_analyzer",
+      "command": "glsl_analyzer",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "glsld": {
+      "name": "glsld",
+      "command": "glsld",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "golangci-lint-lsp": {
+      "name": "golangci-lint-lsp",
+      "command": "golangci-lint-langserver",
+      "args": [],
+      "environment": {},
+      "config": {
+        "command": [
+          "golangci-lint",
+          "run",
+          "--output.json.path=stdout",
+          "--show-stats=false",
+          "--issues-exit-code=1"
+        ]
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "gopls": {
+      "name": "gopls",
+      "command": "gopls",
+      "args": [],
+      "environment": {},
+      "config": {
+        "hints": {
+          "assignVariableTypes": true,
+          "compositeLiteralFields": true,
+          "constantValues": true,
+          "functionTypeParameters": true,
+          "parameterNames": true,
+          "rangeVariableTypes": true
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "graphql-language-service": {
+      "name": "graphql-language-service",
+      "command": "graphql-lsp",
+      "args": [
+        "server",
+        "-m",
+        "stream"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "hare-lsp": {
+      "name": "hare-lsp",
+      "command": "hare-lsp",
+      "args": [
+        "-S"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "harper-ls": {
+      "name": "harper-ls",
+      "command": "harper-ls",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "haskell-language-server": {
+      "name": "haskell-language-server",
+      "command": "haskell-language-server-wrapper",
+      "args": [
+        "--lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "hdls": {
+      "name": "hdls",
+      "command": "hdls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "helm_ls": {
+      "name": "helm_ls",
+      "command": "helm_ls",
+      "args": [
+        "serve"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "hyprls": {
+      "name": "hyprls",
+      "command": "hyprls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "hyuga": {
+      "name": "hyuga",
+      "command": "hyuga",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "idris2-lsp": {
+      "name": "idris2-lsp",
+      "command": "idris2-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "intelephense": {
+      "name": "intelephense",
+      "command": "intelephense",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "jdtls": {
+      "name": "jdtls",
+      "command": "jdtls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "jedi": {
+      "name": "jedi",
+      "command": "jedi-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "jq-lsp": {
+      "name": "jq-lsp",
+      "command": "jq-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "jsonnet-language-server": {
+      "name": "jsonnet-language-server",
+      "command": "jsonnet-language-server",
+      "args": [
+        "-t",
+        "--lint"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "julia": {
+      "name": "julia",
+      "command": "julia",
+      "args": [
+        "--startup-file=no",
+        "--history-file=no",
+        "--quiet",
+        "-e",
+        "using LanguageServer; runserver()"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 60,
+      "required_root_patterns": []
+    },
+    "just-lsp": {
+      "name": "just-lsp",
+      "command": "just-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "kcl-lsp": {
+      "name": "kcl-lsp",
+      "command": "kcl-language-server",
+      "args": [
+        "server",
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "koka": {
+      "name": "koka",
+      "command": "koka",
+      "args": [
+        "--language-server",
+        "--lsstdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "kotlin-language-server": {
+      "name": "kotlin-language-server",
+      "command": "kotlin-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "kotlin-lsp": {
+      "name": "kotlin-lsp",
+      "command": "kotlin-lsp",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "koto-ls": {
+      "name": "koto-ls",
+      "command": "koto-ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "lean": {
+      "name": "lean",
+      "command": "lake",
+      "args": [
+        "serve"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ltex-ls": {
+      "name": "ltex-ls",
+      "command": "ltex-ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ltex-ls-plus": {
+      "name": "ltex-ls-plus",
+      "command": "ltex-ls-plus",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "lua-language-server": {
+      "name": "lua-language-server",
+      "command": "lua-language-server",
+      "args": [],
+      "environment": {},
+      "config": {
+        "Lua": {
+          "hint": {
+            "enable": true,
+            "arrayIndex": "Enable",
+            "setType": true,
+            "paramName": "All",
+            "paramType": true,
+            "await": true
+          }
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "luau": {
+      "name": "luau",
+      "command": "luau-lsp",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "markdoc-ls": {
+      "name": "markdoc-ls",
+      "command": "markdoc-ls",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "markdown-oxide": {
+      "name": "markdown-oxide",
+      "command": "markdown-oxide",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "marksman": {
+      "name": "marksman",
+      "command": "marksman",
+      "args": [
+        "server"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "mesonlsp": {
+      "name": "mesonlsp",
+      "command": "mesonlsp",
+      "args": [
+        "--lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "metals": {
+      "name": "metals",
+      "command": "metals",
+      "args": [],
+      "environment": {},
+      "config": {
+        "isHttpEnabled": true,
+        "metals": {
+          "inlayHints": {
+            "typeParameters": {
+              "enable": true
+            },
+            "hintsInPatternMatch": {
+              "enable": true
+            }
+          }
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "mint": {
+      "name": "mint",
+      "command": "mint",
+      "args": [
+        "tool",
+        "ls"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "mojo-lsp-server": {
+      "name": "mojo-lsp-server",
+      "command": "pixi",
+      "args": [
+        "run",
+        "mojo-lsp-server"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "neocmakelsp": {
+      "name": "neocmakelsp",
+      "command": "neocmakelsp",
+      "args": [
+        "stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "nil": {
+      "name": "nil",
+      "command": "nil",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "nimlangserver": {
+      "name": "nimlangserver",
+      "command": "nimlangserver",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "nimlsp": {
+      "name": "nimlsp",
+      "command": "nimlsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "nixd": {
+      "name": "nixd",
+      "command": "nixd",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "nls": {
+      "name": "nls",
+      "command": "nls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "nu-lint": {
+      "name": "nu-lint",
+      "command": "nu-lint",
+      "args": [
+        "--lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "nu-lsp": {
+      "name": "nu-lsp",
+      "command": "nu",
+      "args": [
+        "--lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ocamllsp": {
+      "name": "ocamllsp",
+      "command": "ocamllsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ols": {
+      "name": "ols",
+      "command": "ols",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "omnisharp": {
+      "name": "omnisharp",
+      "command": "OmniSharp",
+      "args": [
+        "--languageserver"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "openscad-lsp": {
+      "name": "openscad-lsp",
+      "command": "openscad-lsp",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "oxlint-language-server": {
+      "name": "oxlint-language-server",
+      "command": "oxlint",
+      "args": [
+        "--lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "pasls": {
+      "name": "pasls",
+      "command": "pasls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "pbkit": {
+      "name": "pbkit",
+      "command": "pb",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "perlnavigator": {
+      "name": "perlnavigator",
+      "command": "perlnavigator",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "pest-language-server": {
+      "name": "pest-language-server",
+      "command": "pest-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "pkl-lsp": {
+      "name": "pkl-lsp",
+      "command": "pkl-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "prisma-language-server": {
+      "name": "prisma-language-server",
+      "command": "prisma-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {
+        "prisma": {
+          "enableDiagnostics": true
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "protols": {
+      "name": "protols",
+      "command": "protols",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "purescript-language-server": {
+      "name": "purescript-language-server",
+      "command": "purescript-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "pylsp": {
+      "name": "pylsp",
+      "command": "pylsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "pylyzer": {
+      "name": "pylyzer",
+      "command": "pylyzer",
+      "args": [
+        "--server"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "pyrefly": {
+      "name": "pyrefly",
+      "command": "pyrefly",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "pyright": {
+      "name": "pyright",
+      "command": "pyright-langserver",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {},
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "pytest-language-server": {
+      "name": "pytest-language-server",
+      "command": "pytest-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "qmlls": {
+      "name": "qmlls",
+      "command": "qmlls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "quint-language-server": {
+      "name": "quint-language-server",
+      "command": "quint-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "r": {
+      "name": "r",
+      "command": "R",
+      "args": [
+        "--no-echo",
+        "-e",
+        "languageserver::run()"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "racket": {
+      "name": "racket",
+      "command": "racket",
+      "args": [
+        "-l",
+        "racket-langserver"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "regols": {
+      "name": "regols",
+      "command": "regols",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "rescript-language-server": {
+      "name": "rescript-language-server",
+      "command": "rescript-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ripple-lsp": {
+      "name": "ripple-lsp",
+      "command": "ripple-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "robotcode": {
+      "name": "robotcode",
+      "command": "robotcode",
+      "args": [
+        "language-server",
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "robotframework_ls": {
+      "name": "robotframework_ls",
+      "command": "robotframework_ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ron-lsp": {
+      "name": "ron-lsp",
+      "command": "ron-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "rshtml-analyzer": {
+      "name": "rshtml-analyzer",
+      "command": "rshtml-analyzer",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ruby-lsp": {
+      "name": "ruby-lsp",
+      "command": "ruby-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ruff": {
+      "name": "ruff",
+      "command": "ruff",
+      "args": [
+        "server"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "rumdl": {
+      "name": "rumdl",
+      "command": "rumdl",
+      "args": [
+        "server"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "rust-analyzer": {
+      "name": "rust-analyzer",
+      "command": "rust-analyzer",
+      "args": [],
+      "environment": {},
+      "config": {
+        "inlayHints": {
+          "bindingModeHints": {
+            "enable": false
+          },
+          "closingBraceHints": {
+            "minLines": 10
+          },
+          "closureReturnTypeHints": {
+            "enable": "with_block"
+          },
+          "discriminantHints": {
+            "enable": "fieldless"
+          },
+          "lifetimeElisionHints": {
+            "enable": "skip_trivial"
+          },
+          "typeHints": {
+            "hideClosureInitialization": false
+          }
+        },
+        "files": {
+          "watcher": "server"
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "serve-d": {
+      "name": "serve-d",
+      "command": "serve-d",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "slangd": {
+      "name": "slangd",
+      "command": "slangd",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "slint-lsp": {
+      "name": "slint-lsp",
+      "command": "slint-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "smalisp": {
+      "name": "smalisp",
+      "command": "smalisp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "solargraph": {
+      "name": "solargraph",
+      "command": "solargraph",
+      "args": [
+        "stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "solc": {
+      "name": "solc",
+      "command": "solc",
+      "args": [
+        "--lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "sourcekit-lsp": {
+      "name": "sourcekit-lsp",
+      "command": "sourcekit-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "sourcepawn-studio": {
+      "name": "sourcepawn-studio",
+      "command": "sourcepawn-studio",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "spade-language-server": {
+      "name": "spade-language-server",
+      "command": "spade-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "starpls": {
+      "name": "starpls",
+      "command": "starpls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "superhtml": {
+      "name": "superhtml",
+      "command": "superhtml",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "svelteserver": {
+      "name": "svelteserver",
+      "command": "svelteserver",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {
+        "configuration": {
+          "typescript": {
+            "inlayHints": {
+              "parameterTypes": {
+                "enabled": true
+              },
+              "variableTypes": {
+                "enabled": true
+              },
+              "propertyDeclarationTypes": {
+                "enabled": true
+              },
+              "functionLikeReturnTypes": {
+                "enabled": true
+              },
+              "enumMemberValues": {
+                "enabled": true
+              },
+              "parameterNames": {
+                "enabled": "all"
+              }
+            }
+          },
+          "javascript": {
+            "inlayHints": {
+              "parameterTypes": {
+                "enabled": true
+              },
+              "variableTypes": {
+                "enabled": true
+              },
+              "propertyDeclarationTypes": {
+                "enabled": true
+              },
+              "functionLikeReturnTypes": {
+                "enabled": true
+              },
+              "enumMemberValues": {
+                "enabled": true
+              },
+              "parameterNames": {
+                "enabled": "all"
+              }
+            }
+          }
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "svlangserver": {
+      "name": "svlangserver",
+      "command": "svlangserver",
+      "args": [],
+      "environment": {},
+      "config": {
+        "systemverilog": {
+          "includeIndexing": [
+            "*.{v,vh,sv,svh}",
+            "**/*.{v,vh,sv,svh}"
+          ]
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "swipl": {
+      "name": "swipl",
+      "command": "swipl",
+      "args": [
+        "-g",
+        "use_module(library(lsp_server))",
+        "-g",
+        "lsp_server:main",
+        "-t",
+        "halt",
+        "--",
+        "stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "systemd-lsp": {
+      "name": "systemd-lsp",
+      "command": "systemd-lsp",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "tailwindcss-ls": {
+      "name": "tailwindcss-ls",
+      "command": "tailwindcss-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "taplo": {
+      "name": "taplo",
+      "command": "taplo",
+      "args": [
+        "lsp",
+        "stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "teal-language-server": {
+      "name": "teal-language-server",
+      "command": "teal-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "templ": {
+      "name": "templ",
+      "command": "templ",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "termux-language-server": {
+      "name": "termux-language-server",
+      "command": "termux-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "terraform-ls": {
+      "name": "terraform-ls",
+      "command": "terraform-ls",
+      "args": [
+        "serve"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "texlab": {
+      "name": "texlab",
+      "command": "texlab",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "tilt": {
+      "name": "tilt",
+      "command": "tilt",
+      "args": [
+        "lsp",
+        "start"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "tinymist": {
+      "name": "tinymist",
+      "command": "tinymist",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "tombi": {
+      "name": "tombi",
+      "command": "tombi",
+      "args": [
+        "lsp"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ts_query_ls": {
+      "name": "ts_query_ls",
+      "command": "ts_query_ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "ty": {
+      "name": "ty",
+      "command": "ty",
+      "args": [
+        "server"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "typescript-language-server": {
+      "name": "typescript-language-server",
+      "command": "typescript-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {
+        "hostInfo": "helix",
+        "typescript": {
+          "inlayHints": {
+            "includeInlayEnumMemberValueHints": true,
+            "includeInlayFunctionLikeReturnTypeHints": true,
+            "includeInlayFunctionParameterTypeHints": true,
+            "includeInlayParameterNameHints": "all",
+            "includeInlayParameterNameHintsWhenArgumentMatchesName": true,
+            "includeInlayPropertyDeclarationTypeHints": true,
+            "includeInlayVariableTypeHints": true
+          }
+        },
+        "javascript": {
+          "inlayHints": {
+            "includeInlayEnumMemberValueHints": true,
+            "includeInlayFunctionLikeReturnTypeHints": true,
+            "includeInlayFunctionParameterTypeHints": true,
+            "includeInlayParameterNameHints": "all",
+            "includeInlayParameterNameHintsWhenArgumentMatchesName": true,
+            "includeInlayPropertyDeclarationTypeHints": true,
+            "includeInlayVariableTypeHints": true
+          }
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "typespec": {
+      "name": "typespec",
+      "command": "tsp-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "vala-language-server": {
+      "name": "vala-language-server",
+      "command": "vala-language-server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "vale-ls": {
+      "name": "vale-ls",
+      "command": "vale-ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "verible-verilog-ls": {
+      "name": "verible-verilog-ls",
+      "command": "verible-verilog-ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "vhdl_ls": {
+      "name": "vhdl_ls",
+      "command": "vhdl_ls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "vlang-language-server": {
+      "name": "vlang-language-server",
+      "command": "v-analyzer",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "vscode-css-language-server": {
+      "name": "vscode-css-language-server",
+      "command": "vscode-css-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {
+        "provideFormatter": true,
+        "css": {
+          "validate": {
+            "enable": true
+          }
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "vscode-eslint-language-server": {
+      "name": "vscode-eslint-language-server",
+      "command": "vscode-eslint-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {
+        "validate": "on",
+        "experimental": {
+          "useFlatConfig": false
+        },
+        "rulesCustomizations": [],
+        "run": "onType",
+        "problems": {
+          "shortenToSingleLine": false
+        },
+        "nodePath": "",
+        "codeAction": {
+          "disableRuleComment": {
+            "enable": true,
+            "location": "separateLine"
+          },
+          "showDocumentation": {
+            "enable": true
+          }
+        },
+        "workingDirectory": {
+          "mode": "location"
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "vscode-html-language-server": {
+      "name": "vscode-html-language-server",
+      "command": "vscode-html-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {
+        "provideFormatter": true
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "vscode-json-language-server": {
+      "name": "vscode-json-language-server",
+      "command": "vscode-json-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {
+        "provideFormatter": true,
+        "json": {
+          "validate": {
+            "enable": true
+          }
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "vuels": {
+      "name": "vuels",
+      "command": "vue-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": {
+        "typescript": {
+          "tsdk": "node_modules/typescript/lib/"
+        }
+      },
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "wasm-language-tools": {
+      "name": "wasm-language-tools",
+      "command": "wat_server",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "wgsl-analyzer": {
+      "name": "wgsl-analyzer",
+      "command": "wgsl-analyzer",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "wikitext-lsp": {
+      "name": "wikitext-lsp",
+      "command": "wikitext-lsp",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "yaml-language-server": {
+      "name": "yaml-language-server",
+      "command": "yaml-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "yls": {
+      "name": "yls",
+      "command": "yls",
+      "args": [
+        "-vv"
+      ],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    },
+    "zls": {
+      "name": "zls",
+      "command": "zls",
+      "args": [],
+      "environment": {},
+      "config": null,
+      "timeout": 20,
+      "required_root_patterns": []
+    }
+  },
+  "languages": [
+    {
+      "name": "ada",
+      "language_id": null,
+      "scope": "source.ada",
+      "file_types": [
+        {
+          "ext": "adb"
+        },
+        {
+          "ext": "ads"
+        }
+      ],
+      "roots": [
+        "alire.toml"
+      ],
+      "servers": [
+        {
+          "name": "ada-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "adl",
+      "language_id": null,
+      "scope": "source.adl",
+      "file_types": [
+        {
+          "ext": "adl"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "agda",
+      "language_id": null,
+      "scope": "source.agda",
+      "file_types": [
+        {
+          "ext": "agda"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "alloy",
+      "language_id": null,
+      "scope": "source.alloy",
+      "file_types": [
+        {
+          "ext": "alloy"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "amber",
+      "language_id": null,
+      "scope": "source.ab",
+      "file_types": [
+        {
+          "ext": "ab"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "amber-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "astro",
+      "language_id": null,
+      "scope": "source.astro",
+      "file_types": [
+        {
+          "ext": "astro"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "astro-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "awk",
+      "language_id": null,
+      "scope": "source.awk",
+      "file_types": [
+        {
+          "ext": "awk"
+        },
+        {
+          "ext": "gawk"
+        },
+        {
+          "ext": "nawk"
+        },
+        {
+          "ext": "mawk"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "awk-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "bash",
+      "language_id": null,
+      "scope": "source.bash",
+      "file_types": [
+        {
+          "ext": "sh"
+        },
+        {
+          "ext": "bash"
+        },
+        {
+          "ext": "ash"
+        },
+        {
+          "ext": "dash"
+        },
+        {
+          "ext": "ksh"
+        },
+        {
+          "ext": "mksh"
+        },
+        {
+          "ext": "zsh"
+        },
+        {
+          "ext": "zshenv"
+        },
+        {
+          "ext": "zlogin"
+        },
+        {
+          "ext": "zlogout"
+        },
+        {
+          "ext": "zprofile"
+        },
+        {
+          "ext": "zshrc"
+        },
+        {
+          "ext": "eclass"
+        },
+        {
+          "ext": "ebuild"
+        },
+        {
+          "ext": "bazelrc"
+        },
+        {
+          "ext": "Renviron"
+        },
+        {
+          "ext": "zsh-theme"
+        },
+        {
+          "ext": "cshrc"
+        },
+        {
+          "ext": "tcshrc"
+        },
+        {
+          "ext": "bashrc_Apple_Terminal"
+        },
+        {
+          "ext": "zshrc_Apple_Terminal"
+        },
+        {
+          "glob": "i3/config"
+        },
+        {
+          "glob": "sway/config"
+        },
+        {
+          "glob": ".tmux.conf"
+        },
+        {
+          "glob": "tmux.conf"
+        },
+        {
+          "glob": ".sh_history"
+        },
+        {
+          "glob": ".bash_history"
+        },
+        {
+          "glob": ".bash_login"
+        },
+        {
+          "glob": ".bash_logout"
+        },
+        {
+          "glob": ".bash_profile"
+        },
+        {
+          "glob": ".bashrc"
+        },
+        {
+          "glob": ".profile"
+        },
+        {
+          "glob": ".zshenv"
+        },
+        {
+          "glob": ".zlogin"
+        },
+        {
+          "glob": ".zlogout"
+        },
+        {
+          "glob": ".zprofile"
+        },
+        {
+          "glob": ".zshrc"
+        },
+        {
+          "glob": ".zimrc"
+        },
+        {
+          "glob": "APKBUILD"
+        },
+        {
+          "glob": ".bash_aliases"
+        },
+        {
+          "glob": "bash_completion"
+        },
+        {
+          "glob": "bash-completion/completions/*"
+        },
+        {
+          "glob": "bash_completion.d/*"
+        },
+        {
+          "glob": ".Renviron"
+        },
+        {
+          "glob": ".xprofile"
+        },
+        {
+          "glob": ".xsession"
+        },
+        {
+          "glob": ".xsessionrc"
+        },
+        {
+          "glob": ".yashrc"
+        },
+        {
+          "glob": ".yash_profile"
+        },
+        {
+          "glob": ".hushlogin"
+        },
+        {
+          "glob": ".xinitrc"
+        },
+        {
+          "glob": "xinitrc"
+        },
+        {
+          "glob": ".xserverrc"
+        },
+        {
+          "glob": "xserverrc"
+        },
+        {
+          "glob": "direnvrc"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "bash-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "basic",
+      "language_id": null,
+      "scope": "source.basic",
+      "file_types": [
+        {
+          "ext": "bas"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "bass",
+      "language_id": null,
+      "scope": "source.bass",
+      "file_types": [
+        {
+          "ext": "bass"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "bass",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "beancount",
+      "language_id": null,
+      "scope": "source.beancount",
+      "file_types": [
+        {
+          "ext": "beancount"
+        },
+        {
+          "ext": "bean"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "beancount-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "bibtex",
+      "language_id": null,
+      "scope": "source.bib",
+      "file_types": [
+        {
+          "ext": "bib"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "texlab",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "bicep",
+      "language_id": null,
+      "scope": "source.bicep",
+      "file_types": [
+        {
+          "ext": "bicep"
+        },
+        {
+          "ext": "bicepparam"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "bicep-langserver",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "bitbake",
+      "language_id": null,
+      "scope": "source.bitbake",
+      "file_types": [
+        {
+          "ext": "bb"
+        },
+        {
+          "ext": "bbappend"
+        },
+        {
+          "ext": "bbclass"
+        },
+        {
+          "glob": "conf/*.conf"
+        },
+        {
+          "glob": "conf/*/*.{inc,conf}"
+        },
+        {
+          "glob": "recipe-*/*/*.inc"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "bitbake-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "blade",
+      "language_id": null,
+      "scope": "source.blade.php",
+      "file_types": [
+        {
+          "glob": "*.blade.php"
+        },
+        {
+          "ext": "blade"
+        }
+      ],
+      "roots": [
+        "composer.json",
+        "index.php"
+      ],
+      "servers": []
+    },
+    {
+      "name": "blueprint",
+      "language_id": null,
+      "scope": "source.blueprint",
+      "file_types": [
+        {
+          "ext": "blp"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "blueprint-compiler",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "bovex",
+      "language_id": null,
+      "scope": "source.bovex",
+      "file_types": [
+        {
+          "ext": "bovex"
+        },
+        {
+          "ext": "bibvex"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "c",
+      "language_id": null,
+      "scope": "source.c",
+      "file_types": [
+        {
+          "ext": "c"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "clangd",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "c-sharp",
+      "language_id": null,
+      "scope": "source.csharp",
+      "file_types": [
+        {
+          "ext": "cs"
+        },
+        {
+          "ext": "csx"
+        },
+        {
+          "ext": "cake"
+        }
+      ],
+      "roots": [
+        "*.slnx",
+        "*.sln",
+        "*.csproj"
+      ],
+      "servers": [
+        {
+          "name": "omnisharp",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "csharp-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "c3",
+      "language_id": null,
+      "scope": "source.c3",
+      "file_types": [
+        {
+          "ext": "c3"
+        },
+        {
+          "ext": "c3i"
+        },
+        {
+          "ext": "c3t"
+        }
+      ],
+      "roots": [
+        "project.json"
+      ],
+      "servers": [
+        {
+          "name": "c3-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "cabal",
+      "language_id": null,
+      "scope": "source.cabal",
+      "file_types": [
+        {
+          "ext": "cabal"
+        }
+      ],
+      "roots": [
+        "cabal.project",
+        "Setup.hs"
+      ],
+      "servers": [
+        {
+          "name": "haskell-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "caddyfile",
+      "language_id": null,
+      "scope": "source.caddyfile",
+      "file_types": [
+        {
+          "ext": "Caddyfile"
+        },
+        {
+          "glob": "Caddyfile"
+        },
+        {
+          "glob": "Caddyfile.*"
+        },
+        {
+          "ext": "caddyfile"
+        },
+        {
+          "glob": "caddyfile"
+        },
+        {
+          "glob": "caddyfile.*"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "cairo",
+      "language_id": null,
+      "scope": "source.cairo",
+      "file_types": [
+        {
+          "ext": "cairo"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "cairo-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "capnp",
+      "language_id": null,
+      "scope": "source.capnp",
+      "file_types": [
+        {
+          "ext": "capnp"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "cel",
+      "language_id": null,
+      "scope": "source.cel",
+      "file_types": [
+        {
+          "ext": "cel"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "chuck",
+      "language_id": null,
+      "scope": "source.ck",
+      "file_types": [
+        {
+          "glob": "*.ck"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "circom",
+      "language_id": null,
+      "scope": "source.circom",
+      "file_types": [
+        {
+          "ext": "circom"
+        }
+      ],
+      "roots": [
+        "package.json"
+      ],
+      "servers": [
+        {
+          "name": "circom-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "clarity",
+      "language_id": null,
+      "scope": "source.clar",
+      "file_types": [
+        {
+          "ext": "clar"
+        }
+      ],
+      "roots": [
+        "Clarinet.toml"
+      ],
+      "servers": [
+        {
+          "name": "clarinet",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "clojure",
+      "language_id": null,
+      "scope": "source.clojure",
+      "file_types": [
+        {
+          "ext": "clj"
+        },
+        {
+          "ext": "cljs"
+        },
+        {
+          "ext": "cljc"
+        },
+        {
+          "ext": "clje"
+        },
+        {
+          "ext": "cljr"
+        },
+        {
+          "ext": "cljx"
+        },
+        {
+          "ext": "edn"
+        },
+        {
+          "ext": "boot"
+        }
+      ],
+      "roots": [
+        "project.clj",
+        "build.boot",
+        "deps.edn",
+        "shadow-cljs.edn"
+      ],
+      "servers": [
+        {
+          "name": "clojure-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "cmake",
+      "language_id": null,
+      "scope": "source.cmake",
+      "file_types": [
+        {
+          "ext": "cmake"
+        },
+        {
+          "glob": "CMakeLists.txt"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "neocmakelsp",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "cmake-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "codeql",
+      "language_id": null,
+      "scope": "source.ql",
+      "file_types": [
+        {
+          "ext": "ql"
+        },
+        {
+          "ext": "qll"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "codeql",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "comment",
+      "language_id": null,
+      "scope": "scope.comment",
+      "file_types": [],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "common-lisp",
+      "language_id": null,
+      "scope": "source.lisp",
+      "file_types": [
+        {
+          "ext": "lisp"
+        },
+        {
+          "ext": "asd"
+        },
+        {
+          "ext": "cl"
+        },
+        {
+          "ext": "l"
+        },
+        {
+          "ext": "lsp"
+        },
+        {
+          "ext": "ny"
+        },
+        {
+          "ext": "podsl"
+        },
+        {
+          "ext": "ros"
+        },
+        {
+          "ext": "sexp"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "cl-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "cpon",
+      "language_id": null,
+      "scope": "scope.cpon",
+      "file_types": [
+        {
+          "ext": "cpon"
+        },
+        {
+          "ext": "cp"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "cpp",
+      "language_id": null,
+      "scope": "source.cpp",
+      "file_types": [
+        {
+          "ext": "cc"
+        },
+        {
+          "ext": "hh"
+        },
+        {
+          "ext": "c++"
+        },
+        {
+          "ext": "cpp"
+        },
+        {
+          "ext": "hpp"
+        },
+        {
+          "ext": "h"
+        },
+        {
+          "ext": "ipp"
+        },
+        {
+          "ext": "tpp"
+        },
+        {
+          "ext": "cxx"
+        },
+        {
+          "ext": "hxx"
+        },
+        {
+          "ext": "ixx"
+        },
+        {
+          "ext": "txx"
+        },
+        {
+          "ext": "ino"
+        },
+        {
+          "ext": "C"
+        },
+        {
+          "ext": "H"
+        },
+        {
+          "ext": "cu"
+        },
+        {
+          "ext": "cuh"
+        },
+        {
+          "ext": "cppm"
+        },
+        {
+          "ext": "h++"
+        },
+        {
+          "ext": "ii"
+        },
+        {
+          "ext": "inl"
+        },
+        {
+          "glob": ".hpp.in"
+        },
+        {
+          "glob": ".h.in"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "clangd",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "cross-config",
+      "language_id": null,
+      "scope": "source.cross-config",
+      "file_types": [
+        {
+          "glob": "Cross.toml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "taplo",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "tombi",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "crystal",
+      "language_id": null,
+      "scope": "source.cr",
+      "file_types": [
+        {
+          "ext": "cr"
+        }
+      ],
+      "roots": [
+        "shard.yml",
+        "shard.lock"
+      ],
+      "servers": [
+        {
+          "name": "crystalline",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "ameba-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "css",
+      "language_id": null,
+      "scope": "source.css",
+      "file_types": [
+        {
+          "ext": "css"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "vscode-css-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "csv",
+      "language_id": null,
+      "scope": "source.csv",
+      "file_types": [
+        {
+          "ext": "csv"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "cue",
+      "language_id": null,
+      "scope": "source.cue",
+      "file_types": [
+        {
+          "ext": "cue"
+        }
+      ],
+      "roots": [
+        "cue.mod"
+      ],
+      "servers": [
+        {
+          "name": "cuelsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "cylc",
+      "language_id": null,
+      "scope": "source.cylc",
+      "file_types": [
+        {
+          "ext": "cylc"
+        },
+        {
+          "glob": "suite.rc"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "cython",
+      "language_id": null,
+      "scope": "source.cython",
+      "file_types": [
+        {
+          "ext": "pxd"
+        },
+        {
+          "ext": "pxi"
+        },
+        {
+          "ext": "pyx"
+        }
+      ],
+      "roots": [
+        "pyproject.toml",
+        "setup.py",
+        "poetry.lock"
+      ],
+      "servers": []
+    },
+    {
+      "name": "d",
+      "language_id": null,
+      "scope": "source.d",
+      "file_types": [
+        {
+          "ext": "d"
+        },
+        {
+          "ext": "dd"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "serve-d",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "dart",
+      "language_id": null,
+      "scope": "source.dart",
+      "file_types": [
+        {
+          "ext": "dart"
+        }
+      ],
+      "roots": [
+        "pubspec.yaml"
+      ],
+      "servers": [
+        {
+          "name": "dart",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "dbml",
+      "language_id": null,
+      "scope": "source.dbml",
+      "file_types": [
+        {
+          "ext": "dbml"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "debian",
+      "language_id": null,
+      "scope": "text.debian",
+      "file_types": [
+        {
+          "ext": "dsc"
+        },
+        {
+          "ext": "changes"
+        },
+        {
+          "glob": "debian/**/control"
+        },
+        {
+          "glob": "etc/apt/sources.list.d/*.sources"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "devicetree",
+      "language_id": null,
+      "scope": "source.devicetree",
+      "file_types": [
+        {
+          "ext": "dts"
+        },
+        {
+          "ext": "dtsi"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "dts-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "dhall",
+      "language_id": null,
+      "scope": "source.dhall",
+      "file_types": [
+        {
+          "ext": "dhall"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "dhall-lsp-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "diff",
+      "language_id": null,
+      "scope": "source.diff",
+      "file_types": [
+        {
+          "ext": "diff"
+        },
+        {
+          "ext": "patch"
+        },
+        {
+          "ext": "rej"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "djot",
+      "language_id": null,
+      "scope": "source.djot",
+      "file_types": [
+        {
+          "ext": "dj"
+        },
+        {
+          "ext": "djot"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "docker-bake",
+      "language_id": "dockerbake",
+      "scope": "source.docker-bake",
+      "file_types": [
+        {
+          "glob": "docker-bake.hcl"
+        },
+        {
+          "glob": "docker-bake.override.hcl"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "docker-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "docker-compose",
+      "language_id": "dockercompose",
+      "scope": "source.yaml.docker-compose",
+      "file_types": [
+        {
+          "glob": "docker-compose.yaml"
+        },
+        {
+          "glob": "docker-compose.yml"
+        },
+        {
+          "glob": "compose.yaml"
+        },
+        {
+          "glob": "compose.yml"
+        }
+      ],
+      "roots": [
+        "docker-compose.yaml",
+        "docker-compose.yml",
+        "compose.yaml",
+        "compose.yml"
+      ],
+      "servers": [
+        {
+          "name": "docker-compose-langserver",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "yaml-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "docker-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "dockerfile",
+      "language_id": null,
+      "scope": "source.dockerfile",
+      "file_types": [
+        {
+          "ext": "Dockerfile"
+        },
+        {
+          "glob": "Dockerfile"
+        },
+        {
+          "glob": "Dockerfile.*"
+        },
+        {
+          "ext": "dockerfile"
+        },
+        {
+          "glob": "dockerfile"
+        },
+        {
+          "glob": "dockerfile.*"
+        },
+        {
+          "ext": "Containerfile"
+        },
+        {
+          "glob": "Containerfile"
+        },
+        {
+          "glob": "Containerfile.*"
+        },
+        {
+          "ext": "containerfile"
+        },
+        {
+          "glob": "containerfile"
+        },
+        {
+          "glob": "containerfile.*"
+        }
+      ],
+      "roots": [
+        "Dockerfile",
+        "Containerfile"
+      ],
+      "servers": [
+        {
+          "name": "docker-langserver",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "docker-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "dot",
+      "language_id": null,
+      "scope": "source.dot",
+      "file_types": [
+        {
+          "ext": "dot"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "dot-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "doxyfile",
+      "language_id": null,
+      "scope": "source.doxyfile",
+      "file_types": [
+        {
+          "glob": "Doxyfile"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "dtd",
+      "language_id": null,
+      "scope": "source.dtd",
+      "file_types": [
+        {
+          "ext": "dtd"
+        },
+        {
+          "ext": "ent"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "dune",
+      "language_id": null,
+      "scope": "source.dune",
+      "file_types": [
+        {
+          "glob": "dune-project"
+        },
+        {
+          "glob": "dune"
+        }
+      ],
+      "roots": [
+        "dune-project"
+      ],
+      "servers": []
+    },
+    {
+      "name": "dunstrc",
+      "language_id": null,
+      "scope": "source.dunstrc",
+      "file_types": [
+        {
+          "glob": "dunst/dunstrc"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "earthfile",
+      "language_id": null,
+      "scope": "source.earthfile",
+      "file_types": [
+        {
+          "glob": "Earthfile"
+        }
+      ],
+      "roots": [
+        "Earthfile"
+      ],
+      "servers": [
+        {
+          "name": "earthlyls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "edoc",
+      "language_id": null,
+      "scope": "source.edoc",
+      "file_types": [
+        {
+          "ext": "edoc"
+        },
+        {
+          "ext": "edoc.in"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "eex",
+      "language_id": null,
+      "scope": "source.eex",
+      "file_types": [
+        {
+          "ext": "eex"
+        }
+      ],
+      "roots": [
+        "mix.exs",
+        "mix.lock"
+      ],
+      "servers": []
+    },
+    {
+      "name": "eiffel",
+      "language_id": null,
+      "scope": "source.eiffel",
+      "file_types": [
+        {
+          "ext": "e"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "eiffel-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "ejs",
+      "language_id": null,
+      "scope": "text.html.ejs",
+      "file_types": [
+        {
+          "ext": "ejs"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "elisp",
+      "language_id": null,
+      "scope": "source.elisp",
+      "file_types": [
+        {
+          "ext": "el"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "elixir",
+      "language_id": null,
+      "scope": "source.elixir",
+      "file_types": [
+        {
+          "ext": "ex"
+        },
+        {
+          "ext": "exs"
+        },
+        {
+          "glob": "mix.lock"
+        }
+      ],
+      "roots": [
+        "mix.exs",
+        "mix.lock"
+      ],
+      "servers": [
+        {
+          "name": "elixir-ls",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "expert",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "elm",
+      "language_id": null,
+      "scope": "source.elm",
+      "file_types": [
+        {
+          "ext": "elm"
+        }
+      ],
+      "roots": [
+        "elm.json"
+      ],
+      "servers": [
+        {
+          "name": "elm-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "elvish",
+      "language_id": null,
+      "scope": "source.elvish",
+      "file_types": [
+        {
+          "ext": "elv"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "elvish",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "env",
+      "language_id": null,
+      "scope": "source.env",
+      "file_types": [
+        {
+          "glob": ".env"
+        },
+        {
+          "glob": ".env.*"
+        },
+        {
+          "glob": ".envrc"
+        },
+        {
+          "glob": ".envrc.*"
+        },
+        {
+          "glob": "_environment"
+        },
+        {
+          "glob": "_environment-*"
+        },
+        {
+          "glob": "_environment.local"
+        },
+        {
+          "glob": "_environment.required"
+        },
+        {
+          "glob": ".bazeliskrc"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "erb",
+      "language_id": null,
+      "scope": "text.html.erb",
+      "file_types": [
+        {
+          "ext": "erb"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "erlang",
+      "language_id": null,
+      "scope": "source.erlang",
+      "file_types": [
+        {
+          "ext": "erl"
+        },
+        {
+          "ext": "hrl"
+        },
+        {
+          "ext": "app"
+        },
+        {
+          "glob": "rebar.config"
+        },
+        {
+          "glob": "rebar.lock"
+        },
+        {
+          "glob": "*.app.src"
+        }
+      ],
+      "roots": [
+        "rebar.config"
+      ],
+      "servers": [
+        {
+          "name": "erlang-ls",
+          "only": [],
+          "except": [
+            "document-symbols",
+            "workspace-symbols"
+          ]
+        },
+        {
+          "name": "elp",
+          "only": [],
+          "except": [
+            "document-symbols",
+            "workspace-symbols"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "esdl",
+      "language_id": null,
+      "scope": "source.esdl",
+      "file_types": [
+        {
+          "ext": "esdl"
+        }
+      ],
+      "roots": [
+        "edgedb.toml"
+      ],
+      "servers": []
+    },
+    {
+      "name": "fennel",
+      "language_id": null,
+      "scope": "source.fennel",
+      "file_types": [
+        {
+          "ext": "fnl"
+        },
+        {
+          "ext": "fnlm"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "fennel-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "fga",
+      "language_id": null,
+      "scope": "source.fga",
+      "file_types": [
+        {
+          "ext": "fga"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "fidl",
+      "language_id": null,
+      "scope": "source.fidl",
+      "file_types": [
+        {
+          "ext": "fidl"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "fish",
+      "language_id": null,
+      "scope": "source.fish",
+      "file_types": [
+        {
+          "ext": "fish"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "fish-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "flatbuffers",
+      "language_id": null,
+      "scope": "source.flatbuffers",
+      "file_types": [
+        {
+          "ext": "fbs"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "forth",
+      "language_id": null,
+      "scope": "source.forth",
+      "file_types": [
+        {
+          "ext": "fs"
+        },
+        {
+          "ext": "forth"
+        },
+        {
+          "ext": "fth"
+        },
+        {
+          "ext": "4th"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "forth-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "fortran",
+      "language_id": null,
+      "scope": "source.fortran",
+      "file_types": [
+        {
+          "ext": "f"
+        },
+        {
+          "ext": "for"
+        },
+        {
+          "ext": "f90"
+        },
+        {
+          "ext": "f95"
+        },
+        {
+          "ext": "f03"
+        },
+        {
+          "ext": "F"
+        },
+        {
+          "ext": "F90"
+        },
+        {
+          "ext": "F95"
+        },
+        {
+          "ext": "F03"
+        }
+      ],
+      "roots": [
+        "fpm.toml"
+      ],
+      "servers": [
+        {
+          "name": "fortls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "freebasic",
+      "language_id": null,
+      "scope": "source.freebasic",
+      "file_types": [
+        {
+          "ext": "bas"
+        },
+        {
+          "ext": "bi"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "fsharp",
+      "language_id": null,
+      "scope": "source.fs",
+      "file_types": [
+        {
+          "ext": "fs"
+        },
+        {
+          "ext": "fsx"
+        },
+        {
+          "ext": "fsi"
+        },
+        {
+          "ext": "fsscript"
+        }
+      ],
+      "roots": [
+        "*.slnx",
+        "*.sln",
+        "*.fsproj"
+      ],
+      "servers": [
+        {
+          "name": "fsharp-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gas",
+      "language_id": null,
+      "scope": "source.gas",
+      "file_types": [
+        {
+          "ext": "s"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "asm-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gdscript",
+      "language_id": null,
+      "scope": "source.gdscript",
+      "file_types": [
+        {
+          "ext": "gd"
+        }
+      ],
+      "roots": [
+        "project.godot"
+      ],
+      "servers": []
+    },
+    {
+      "name": "gemini",
+      "language_id": null,
+      "scope": "source.gmi",
+      "file_types": [
+        {
+          "ext": "gmi"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "gherkin",
+      "language_id": null,
+      "scope": "source.feature",
+      "file_types": [
+        {
+          "ext": "feature"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "ghostty",
+      "language_id": null,
+      "scope": "source.ghostty",
+      "file_types": [
+        {
+          "ext": "ghostty"
+        },
+        {
+          "glob": "ghostty/config"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "git-attributes",
+      "language_id": null,
+      "scope": "source.gitattributes",
+      "file_types": [
+        {
+          "glob": ".gitattributes"
+        },
+        {
+          "glob": ".config/git/attributes"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "git-cliff-config",
+      "language_id": null,
+      "scope": "source.git-cliff-config",
+      "file_types": [
+        {
+          "glob": "cliff.toml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "taplo",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "tombi",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "git-commit",
+      "language_id": null,
+      "scope": "git.commitmsg",
+      "file_types": [
+        {
+          "glob": "COMMIT_EDITMSG"
+        },
+        {
+          "glob": "MERGE_MSG"
+        },
+        {
+          "glob": "TAG_EDITMSG"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "commit-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "git-config",
+      "language_id": null,
+      "scope": "source.gitconfig",
+      "file_types": [
+        {
+          "ext": "gitconfig"
+        },
+        {
+          "glob": ".gitmodules"
+        },
+        {
+          "glob": "gitconfig"
+        },
+        {
+          "glob": ".gitconfig"
+        },
+        {
+          "glob": ".git/config"
+        },
+        {
+          "glob": ".config/git/config"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "git-ignore",
+      "language_id": null,
+      "scope": "source.gitignore",
+      "file_types": [
+        {
+          "glob": ".gitignore_global"
+        },
+        {
+          "glob": "git/ignore"
+        },
+        {
+          "glob": ".git/info/exclude"
+        },
+        {
+          "glob": ".ignore"
+        },
+        {
+          "glob": "CODEOWNERS"
+        },
+        {
+          "glob": ".config/helix/ignore"
+        },
+        {
+          "glob": ".helix/ignore"
+        },
+        {
+          "glob": ".*ignore"
+        },
+        {
+          "glob": ".git-blame-ignore-revs"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "git-notes",
+      "language_id": null,
+      "scope": "git.notesmsg",
+      "file_types": [
+        {
+          "glob": "NOTES_EDITMSG"
+        },
+        {
+          "glob": "EDIT_DESCRIPTION"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "git-rebase",
+      "language_id": null,
+      "scope": "source.gitrebase",
+      "file_types": [
+        {
+          "glob": "git-rebase-todo"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "github-action",
+      "language_id": null,
+      "scope": "source.yaml.github-action",
+      "file_types": [
+        {
+          "glob": ".github/workflows/*.yaml"
+        },
+        {
+          "glob": ".github/workflows/*.yml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "actions-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "yaml-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gitlab-ci",
+      "language_id": null,
+      "scope": "source.gitlab-ci",
+      "file_types": [
+        {
+          "glob": ".gitlab-ci.yml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "yaml-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "gitlab-ci-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gjs",
+      "language_id": null,
+      "scope": "source.gjs",
+      "file_types": [
+        {
+          "ext": "gjs"
+        }
+      ],
+      "roots": [
+        "package.json",
+        "ember-cli-build.js"
+      ],
+      "servers": [
+        {
+          "name": "typescript-language-server",
+          "only": [],
+          "except": [
+            "format",
+            "diagnostics"
+          ]
+        },
+        {
+          "name": "vscode-eslint-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "ember-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gleam",
+      "language_id": null,
+      "scope": "source.gleam",
+      "file_types": [
+        {
+          "ext": "gleam"
+        }
+      ],
+      "roots": [
+        "gleam.toml"
+      ],
+      "servers": [
+        {
+          "name": "gleam",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "glimmer",
+      "language_id": null,
+      "scope": "source.glimmer",
+      "file_types": [
+        {
+          "glob": "{app,addon}/{components,templates}/*.hbs"
+        }
+      ],
+      "roots": [
+        "package.json",
+        "ember-cli-build.js"
+      ],
+      "servers": [
+        {
+          "name": "ember-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "glsl",
+      "language_id": null,
+      "scope": "source.glsl",
+      "file_types": [
+        {
+          "ext": "glsl"
+        },
+        {
+          "ext": "vert"
+        },
+        {
+          "ext": "tesc"
+        },
+        {
+          "ext": "tese"
+        },
+        {
+          "ext": "geom"
+        },
+        {
+          "ext": "frag"
+        },
+        {
+          "ext": "comp"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "glsl_analyzer",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "glsld",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gn",
+      "language_id": null,
+      "scope": "source.gn",
+      "file_types": [
+        {
+          "ext": "gn"
+        },
+        {
+          "ext": "gni"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "gnuplot",
+      "language_id": null,
+      "scope": "source.gnuplot",
+      "file_types": [
+        {
+          "ext": "gnuplot"
+        },
+        {
+          "ext": "plot"
+        },
+        {
+          "ext": "plt"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "go",
+      "language_id": null,
+      "scope": "source.go",
+      "file_types": [
+        {
+          "ext": "go"
+        }
+      ],
+      "roots": [
+        "go.work",
+        "go.mod"
+      ],
+      "servers": [
+        {
+          "name": "gopls",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "golangci-lint-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "go-format-string",
+      "language_id": null,
+      "scope": "source.go-format-string",
+      "file_types": [],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "godot-resource",
+      "language_id": null,
+      "scope": "source.tscn",
+      "file_types": [
+        {
+          "ext": "tscn"
+        },
+        {
+          "ext": "tres"
+        },
+        {
+          "ext": "godot"
+        },
+        {
+          "ext": "gdextension"
+        }
+      ],
+      "roots": [
+        "project.godot"
+      ],
+      "servers": []
+    },
+    {
+      "name": "gomod",
+      "language_id": null,
+      "scope": "source.gomod",
+      "file_types": [
+        {
+          "glob": "go.mod"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "gopls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gotmpl",
+      "language_id": null,
+      "scope": "source.gotmpl",
+      "file_types": [
+        {
+          "ext": "gotmpl"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "gopls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gowork",
+      "language_id": null,
+      "scope": "source.gowork",
+      "file_types": [
+        {
+          "glob": "go.work"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "gopls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gpr",
+      "language_id": null,
+      "scope": "source.gpr",
+      "file_types": [
+        {
+          "ext": "gpr"
+        }
+      ],
+      "roots": [
+        "alire.toml"
+      ],
+      "servers": [
+        {
+          "name": "ada-gpr-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "graphql",
+      "language_id": null,
+      "scope": "source.graphql",
+      "file_types": [
+        {
+          "ext": "gql"
+        },
+        {
+          "ext": "graphql"
+        },
+        {
+          "ext": "graphqls"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "graphql-language-service",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "gren",
+      "language_id": null,
+      "scope": "source.gren",
+      "file_types": [
+        {
+          "ext": "gren"
+        }
+      ],
+      "roots": [
+        "gren.json"
+      ],
+      "servers": []
+    },
+    {
+      "name": "groovy",
+      "language_id": "groovy",
+      "scope": "source.groovy",
+      "file_types": [
+        {
+          "ext": "gradle"
+        },
+        {
+          "ext": "groovy"
+        },
+        {
+          "ext": "jenkinsfile"
+        },
+        {
+          "glob": "Jenkinsfile"
+        },
+        {
+          "glob": "Jenkinsfile.*"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "gts",
+      "language_id": null,
+      "scope": "source.gts",
+      "file_types": [
+        {
+          "ext": "gts"
+        }
+      ],
+      "roots": [
+        "package.json",
+        "ember-cli-build.js"
+      ],
+      "servers": [
+        {
+          "name": "typescript-language-server",
+          "only": [],
+          "except": [
+            "format",
+            "diagnostics"
+          ]
+        },
+        {
+          "name": "vscode-eslint-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "ember-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "hare",
+      "language_id": null,
+      "scope": "source.hare",
+      "file_types": [
+        {
+          "ext": "ha"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "hare-lsp",
+          "only": [],
+          "except": [
+            "code-action",
+            "completion",
+            "format",
+            "inlay-hints",
+            "rename-symbol",
+            "workspace-symbols"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "haskell",
+      "language_id": null,
+      "scope": "source.haskell",
+      "file_types": [
+        {
+          "ext": "hs"
+        },
+        {
+          "ext": "hs-boot"
+        },
+        {
+          "ext": "hsc"
+        }
+      ],
+      "roots": [
+        "Setup.hs",
+        "stack.yaml",
+        "cabal.project",
+        "hie.yaml"
+      ],
+      "servers": [
+        {
+          "name": "haskell-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "haskell-literate",
+      "language_id": null,
+      "scope": "source.haskell-literate",
+      "file_types": [
+        {
+          "ext": "lhs"
+        }
+      ],
+      "roots": [
+        "Setup.hs",
+        "stack.yaml",
+        "cabal.project",
+        "hie.yaml"
+      ],
+      "servers": [
+        {
+          "name": "haskell-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "haskell-persistent",
+      "language_id": null,
+      "scope": "source.persistentmodels",
+      "file_types": [
+        {
+          "ext": "persistentmodels"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "haxe",
+      "language_id": null,
+      "scope": "source.haxe",
+      "file_types": [
+        {
+          "ext": "hx"
+        }
+      ],
+      "roots": [
+        "haxelib.json",
+        "project.xml",
+        "build.hxml"
+      ],
+      "servers": [
+        {
+          "name": "haxe-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "hcl",
+      "language_id": "terraform",
+      "scope": "source.hcl",
+      "file_types": [
+        {
+          "ext": "hcl"
+        },
+        {
+          "ext": "tf"
+        },
+        {
+          "ext": "nomad"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "terraform-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "hdl",
+      "language_id": null,
+      "scope": "source.hdl",
+      "file_types": [
+        {
+          "ext": "hdl"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "hdls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "heex",
+      "language_id": null,
+      "scope": "source.heex",
+      "file_types": [
+        {
+          "ext": "heex"
+        }
+      ],
+      "roots": [
+        "mix.exs",
+        "mix.lock"
+      ],
+      "servers": [
+        {
+          "name": "elixir-ls",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "expert",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "helm",
+      "language_id": null,
+      "scope": "source.helm",
+      "file_types": [
+        {
+          "glob": "templates/*.yaml"
+        },
+        {
+          "glob": "templates/*.yml"
+        },
+        {
+          "glob": "templates/_*.tpl"
+        },
+        {
+          "glob": "templates/NOTES.txt"
+        }
+      ],
+      "roots": [
+        "Chart.yaml"
+      ],
+      "servers": [
+        {
+          "name": "helm_ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "hocon",
+      "language_id": null,
+      "scope": "source.conf",
+      "file_types": [
+        {
+          "glob": "**/src/*/resources/**/*.conf"
+        },
+        {
+          "glob": "*scalafmt*.conf"
+        },
+        {
+          "glob": "*scalafix*.conf"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "hoon",
+      "language_id": null,
+      "scope": "source.hoon",
+      "file_types": [
+        {
+          "ext": "hoon"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "hosts",
+      "language_id": null,
+      "scope": "source.hosts",
+      "file_types": [
+        {
+          "glob": "hosts"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "html",
+      "language_id": null,
+      "scope": "text.html.basic",
+      "file_types": [
+        {
+          "ext": "html"
+        },
+        {
+          "ext": "htm"
+        },
+        {
+          "ext": "shtml"
+        },
+        {
+          "ext": "xhtml"
+        },
+        {
+          "ext": "xht"
+        },
+        {
+          "ext": "jsp"
+        },
+        {
+          "ext": "asp"
+        },
+        {
+          "ext": "aspx"
+        },
+        {
+          "ext": "jshtm"
+        },
+        {
+          "ext": "volt"
+        },
+        {
+          "ext": "rhtml"
+        },
+        {
+          "ext": "cshtml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "vscode-html-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "superhtml",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "htmldjango",
+      "language_id": null,
+      "scope": "source.htmldjango",
+      "file_types": [],
+      "roots": [
+        "manage.py"
+      ],
+      "servers": [
+        {
+          "name": "djlsp",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "vscode-html-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "superhtml",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "hurl",
+      "language_id": null,
+      "scope": "source.hurl",
+      "file_types": [
+        {
+          "ext": "hurl"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "hy",
+      "language_id": null,
+      "scope": "source.hy",
+      "file_types": [
+        {
+          "ext": "hy"
+        }
+      ],
+      "roots": [
+        "pyproject.toml"
+      ],
+      "servers": [
+        {
+          "name": "hyuga",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "hyprlang",
+      "language_id": null,
+      "scope": "source.hyprlang",
+      "file_types": [
+        {
+          "glob": "hypr/*.conf"
+        }
+      ],
+      "roots": [
+        "hyprland.conf"
+      ],
+      "servers": [
+        {
+          "name": "hyprls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "idris",
+      "language_id": null,
+      "scope": "source.idr",
+      "file_types": [
+        {
+          "ext": "idr"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "idris2-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "iex",
+      "language_id": null,
+      "scope": "source.iex",
+      "file_types": [
+        {
+          "ext": "iex"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "ini",
+      "language_id": null,
+      "scope": "source.ini",
+      "file_types": [
+        {
+          "ext": "ini"
+        },
+        {
+          "ext": "desktop"
+        },
+        {
+          "glob": "mimeapps.list"
+        },
+        {
+          "ext": "container"
+        },
+        {
+          "ext": "volume"
+        },
+        {
+          "ext": "kube"
+        },
+        {
+          "ext": "network"
+        },
+        {
+          "glob": ".editorconfig"
+        },
+        {
+          "glob": ".npmrc"
+        },
+        {
+          "glob": "hgrc"
+        },
+        {
+          "glob": "npmrc"
+        },
+        {
+          "glob": "rclone.conf"
+        },
+        {
+          "glob": ".aws/config"
+        },
+        {
+          "ext": "properties"
+        },
+        {
+          "ext": "cfg"
+        },
+        {
+          "ext": "directory"
+        },
+        {
+          "glob": ".wslconfig"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "ink",
+      "language_id": null,
+      "scope": "source.ink",
+      "file_types": [
+        {
+          "ext": "ink"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "inko",
+      "language_id": null,
+      "scope": "source.inko",
+      "file_types": [
+        {
+          "ext": "inko"
+        }
+      ],
+      "roots": [
+        "inko.pkg"
+      ],
+      "servers": []
+    },
+    {
+      "name": "janet",
+      "language_id": null,
+      "scope": "source.janet",
+      "file_types": [
+        {
+          "ext": "cgen"
+        },
+        {
+          "ext": "janet"
+        },
+        {
+          "ext": "jdn"
+        }
+      ],
+      "roots": [
+        "project.janet"
+      ],
+      "servers": []
+    },
+    {
+      "name": "java",
+      "language_id": null,
+      "scope": "source.java",
+      "file_types": [
+        {
+          "ext": "java"
+        },
+        {
+          "ext": "jav"
+        },
+        {
+          "ext": "pde"
+        }
+      ],
+      "roots": [
+        "pom.xml",
+        "build.gradle",
+        "build.gradle.kts"
+      ],
+      "servers": [
+        {
+          "name": "jdtls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "javascript",
+      "language_id": "javascript",
+      "scope": "source.js",
+      "file_types": [
+        {
+          "ext": "js"
+        },
+        {
+          "ext": "mjs"
+        },
+        {
+          "ext": "cjs"
+        },
+        {
+          "ext": "rules"
+        },
+        {
+          "ext": "es6"
+        },
+        {
+          "ext": "pac"
+        },
+        {
+          "ext": "gs"
+        },
+        {
+          "glob": ".node_repl_history"
+        },
+        {
+          "glob": "jakefile"
+        }
+      ],
+      "roots": [
+        "package.json",
+        "jsconfig.json"
+      ],
+      "servers": [
+        {
+          "name": "typescript-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "jinja",
+      "language_id": null,
+      "scope": "text.html.jinja",
+      "file_types": [
+        {
+          "ext": "jinja"
+        },
+        {
+          "ext": "jinja2"
+        },
+        {
+          "ext": "j2"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "jjconfig",
+      "language_id": null,
+      "scope": "source.jjconfig",
+      "file_types": [
+        {
+          "glob": "jj/config.toml"
+        },
+        {
+          "glob": "jj/conf.d/*.toml"
+        },
+        {
+          "glob": ".jj/repo/*.toml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "taplo",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "tombi",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "jjdescription",
+      "language_id": null,
+      "scope": "jj.description",
+      "file_types": [
+        {
+          "glob": "*.jjdescription"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "jjrevset",
+      "language_id": null,
+      "scope": "jj.revset",
+      "file_types": [
+        {
+          "ext": "jjrevset"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "jjtemplate",
+      "language_id": null,
+      "scope": "jj.template",
+      "file_types": [
+        {
+          "ext": "jjtemplate"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "jq",
+      "language_id": null,
+      "scope": "source.jq",
+      "file_types": [
+        {
+          "ext": "jq"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "jq-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "jsdoc",
+      "language_id": null,
+      "scope": "source.jsdoc",
+      "file_types": [
+        {
+          "ext": "jsdoc"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "json",
+      "language_id": null,
+      "scope": "source.json",
+      "file_types": [
+        {
+          "ext": "json"
+        },
+        {
+          "ext": "arb"
+        },
+        {
+          "ext": "ipynb"
+        },
+        {
+          "ext": "geojson"
+        },
+        {
+          "ext": "gltf"
+        },
+        {
+          "ext": "webmanifest"
+        },
+        {
+          "glob": "flake.lock"
+        },
+        {
+          "glob": ".babelrc"
+        },
+        {
+          "glob": ".bowerrc"
+        },
+        {
+          "glob": ".jscrc"
+        },
+        {
+          "ext": "js.map"
+        },
+        {
+          "ext": "ts.map"
+        },
+        {
+          "ext": "css.map"
+        },
+        {
+          "glob": ".jslintrc"
+        },
+        {
+          "ext": "jsonl"
+        },
+        {
+          "glob": ".vuerc"
+        },
+        {
+          "glob": "composer.lock"
+        },
+        {
+          "glob": ".watchmanconfig"
+        },
+        {
+          "ext": "avsc"
+        },
+        {
+          "ext": "ldtk"
+        },
+        {
+          "ext": "ldtkl"
+        },
+        {
+          "glob": ".swift-format"
+        },
+        {
+          "ext": "sublime-build"
+        },
+        {
+          "ext": "sublime-color-scheme"
+        },
+        {
+          "ext": "sublime-commands"
+        },
+        {
+          "ext": "sublime-completions"
+        },
+        {
+          "ext": "sublime-keymap"
+        },
+        {
+          "ext": "sublime-macro"
+        },
+        {
+          "ext": "sublime-menu"
+        },
+        {
+          "ext": "sublime-mousemap"
+        },
+        {
+          "ext": "sublime-project"
+        },
+        {
+          "ext": "sublime-settings"
+        },
+        {
+          "ext": "sublime-theme"
+        },
+        {
+          "ext": "sublime-workspace"
+        },
+        {
+          "ext": "code-workspace"
+        },
+        {
+          "glob": ".pytest_cache/v/cache/*"
+        },
+        {
+          "glob": "devenv.lock"
+        },
+        {
+          "glob": "devbox.lock"
+        },
+        {
+          "glob": "manifest.lock"
+        },
+        {
+          "glob": "deno.lock"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "vscode-json-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "json-ld",
+      "language_id": null,
+      "scope": "source.json-ld",
+      "file_types": [
+        {
+          "ext": "jsonld"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "vscode-json-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "json5",
+      "language_id": null,
+      "scope": "source.json5",
+      "file_types": [
+        {
+          "ext": "json5"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "jsonc",
+      "language_id": null,
+      "scope": "source.json",
+      "file_types": [
+        {
+          "ext": "jsonc"
+        },
+        {
+          "glob": "{t,j}sconfig.json"
+        },
+        {
+          "glob": "bun.lock"
+        },
+        {
+          "glob": ".devcontainer.json"
+        },
+        {
+          "glob": "devcontainer.json"
+        },
+        {
+          "glob": ".vscode/*.json"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "vscode-json-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "jsonnet",
+      "language_id": null,
+      "scope": "source.jsonnet",
+      "file_types": [
+        {
+          "ext": "libsonnet"
+        },
+        {
+          "ext": "jsonnet"
+        }
+      ],
+      "roots": [
+        "jsonnetfile.json"
+      ],
+      "servers": [
+        {
+          "name": "jsonnet-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "jsx",
+      "language_id": "javascriptreact",
+      "scope": "source.jsx",
+      "file_types": [
+        {
+          "ext": "jsx"
+        }
+      ],
+      "roots": [
+        "package.json",
+        "jsconfig.json"
+      ],
+      "servers": [
+        {
+          "name": "typescript-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "julia",
+      "language_id": null,
+      "scope": "source.julia",
+      "file_types": [
+        {
+          "ext": "jl"
+        }
+      ],
+      "roots": [
+        "Manifest.toml",
+        "Project.toml"
+      ],
+      "servers": [
+        {
+          "name": "julia",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "just",
+      "language_id": null,
+      "scope": "source.just",
+      "file_types": [
+        {
+          "ext": "just"
+        },
+        {
+          "glob": "justfile"
+        },
+        {
+          "glob": "Justfile"
+        },
+        {
+          "glob": ".justfile"
+        },
+        {
+          "glob": ".Justfile"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "just-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "kcl",
+      "language_id": null,
+      "scope": "source.kcl",
+      "file_types": [
+        {
+          "ext": "kcl"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "kcl-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "kconfig",
+      "language_id": null,
+      "scope": "source.kconfig",
+      "file_types": [
+        {
+          "ext": "kconfig"
+        },
+        {
+          "glob": "kconfig.*"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "kdl",
+      "language_id": null,
+      "scope": "source.kdl",
+      "file_types": [
+        {
+          "ext": "kdl"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "klog",
+      "language_id": null,
+      "scope": "source.klg",
+      "file_types": [
+        {
+          "ext": "klg"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "koka",
+      "language_id": null,
+      "scope": "source.koka",
+      "file_types": [
+        {
+          "ext": "kk"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "koka",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "kotlin",
+      "language_id": null,
+      "scope": "source.kotlin",
+      "file_types": [
+        {
+          "ext": "kt"
+        },
+        {
+          "ext": "kts"
+        }
+      ],
+      "roots": [
+        "settings.gradle",
+        "settings.gradle.kts"
+      ],
+      "servers": [
+        {
+          "name": "kotlin-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "koto",
+      "language_id": null,
+      "scope": "source.koto",
+      "file_types": [
+        {
+          "ext": "koto"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "koto-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "latex",
+      "language_id": null,
+      "scope": "source.tex",
+      "file_types": [
+        {
+          "ext": "tex"
+        },
+        {
+          "ext": "sty"
+        },
+        {
+          "ext": "cls"
+        },
+        {
+          "ext": "Rd"
+        },
+        {
+          "ext": "bbx"
+        },
+        {
+          "ext": "cbx"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "texlab",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "ld",
+      "language_id": null,
+      "scope": "source.ld",
+      "file_types": [
+        {
+          "ext": "ld"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "ldif",
+      "language_id": null,
+      "scope": "source.ldif",
+      "file_types": [
+        {
+          "ext": "ldif"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "lean",
+      "language_id": null,
+      "scope": "source.lean",
+      "file_types": [
+        {
+          "ext": "lean"
+        }
+      ],
+      "roots": [
+        "lakefile.lean",
+        "lakefile.toml"
+      ],
+      "servers": [
+        {
+          "name": "lean",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "ledger",
+      "language_id": null,
+      "scope": "source.ledger",
+      "file_types": [
+        {
+          "ext": "ldg"
+        },
+        {
+          "ext": "ledger"
+        },
+        {
+          "ext": "journal"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "less",
+      "language_id": null,
+      "scope": "source.less",
+      "file_types": [
+        {
+          "ext": "less"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "vscode-css-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "llvm",
+      "language_id": null,
+      "scope": "source.llvm",
+      "file_types": [
+        {
+          "ext": "ll"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "llvm-mir",
+      "language_id": null,
+      "scope": "source.llvm_mir",
+      "file_types": [],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "llvm-mir-yaml",
+      "language_id": null,
+      "scope": "source.yaml",
+      "file_types": [
+        {
+          "ext": "mir"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "log",
+      "language_id": null,
+      "scope": "source.log",
+      "file_types": [
+        {
+          "ext": "log"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "lpf",
+      "language_id": null,
+      "scope": "source.lpf",
+      "file_types": [
+        {
+          "ext": "lpf"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "lua",
+      "language_id": null,
+      "scope": "source.lua",
+      "file_types": [
+        {
+          "ext": "lua"
+        },
+        {
+          "ext": "rockspec"
+        }
+      ],
+      "roots": [
+        ".luarc.json",
+        ".luacheckrc",
+        ".stylua.toml",
+        "selene.toml",
+        ".git"
+      ],
+      "servers": [
+        {
+          "name": "lua-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "lua-format-string",
+      "language_id": null,
+      "scope": "source.lua-format-string",
+      "file_types": [],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "luap",
+      "language_id": null,
+      "scope": "source.luap",
+      "file_types": [],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "luau",
+      "language_id": null,
+      "scope": "source.luau",
+      "file_types": [
+        {
+          "ext": "luau"
+        }
+      ],
+      "roots": [
+        "aftman.toml",
+        "default.project.json",
+        "wally.toml",
+        "rokit.toml",
+        "selene.toml",
+        ".darklua.json",
+        "foreman.toml",
+        ".luaurc"
+      ],
+      "servers": [
+        {
+          "name": "luau",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "mail",
+      "language_id": null,
+      "scope": "text.mail",
+      "file_types": [
+        {
+          "ext": "eml"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "make",
+      "language_id": null,
+      "scope": "source.make",
+      "file_types": [
+        {
+          "glob": "Makefile"
+        },
+        {
+          "glob": "makefile"
+        },
+        {
+          "ext": "make"
+        },
+        {
+          "ext": "mk"
+        },
+        {
+          "ext": "mak"
+        },
+        {
+          "glob": "GNUmakefile"
+        },
+        {
+          "glob": "OCamlMakefile"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "markdoc",
+      "language_id": null,
+      "scope": "text.markdoc",
+      "file_types": [
+        {
+          "ext": "mdoc"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "markdoc-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "markdown",
+      "language_id": null,
+      "scope": "source.md",
+      "file_types": [
+        {
+          "ext": "md"
+        },
+        {
+          "ext": "livemd"
+        },
+        {
+          "ext": "markdown"
+        },
+        {
+          "ext": "mdx"
+        },
+        {
+          "ext": "mkd"
+        },
+        {
+          "ext": "mkdn"
+        },
+        {
+          "ext": "mdwn"
+        },
+        {
+          "ext": "mdown"
+        },
+        {
+          "ext": "markdn"
+        },
+        {
+          "ext": "mdtxt"
+        },
+        {
+          "ext": "mdtext"
+        },
+        {
+          "ext": "workbook"
+        },
+        {
+          "glob": "PULLREQ_EDITMSG"
+        }
+      ],
+      "roots": [
+        ".marksman.toml"
+      ],
+      "servers": [
+        {
+          "name": "marksman",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "markdown-oxide",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "rumdl",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "markdown-rustdoc",
+      "language_id": null,
+      "scope": "source.markdown-rustdoc",
+      "file_types": [],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "markdown.inline",
+      "language_id": null,
+      "scope": "source.markdown.inline",
+      "file_types": [],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "matlab",
+      "language_id": null,
+      "scope": "source.m",
+      "file_types": [
+        {
+          "ext": "m"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "mermaid",
+      "language_id": null,
+      "scope": "source.mermaid",
+      "file_types": [
+        {
+          "ext": "mermaid"
+        },
+        {
+          "ext": "mmd"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "meson",
+      "language_id": null,
+      "scope": "source.meson",
+      "file_types": [
+        {
+          "glob": "meson.build"
+        },
+        {
+          "glob": "meson.options"
+        },
+        {
+          "glob": "meson_options.txt"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "mesonlsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "mint",
+      "language_id": null,
+      "scope": "source.mint",
+      "file_types": [
+        {
+          "ext": "mint"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "mint",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "miseconfig",
+      "language_id": null,
+      "scope": "source.miseconfig",
+      "file_types": [
+        {
+          "glob": "mise.toml"
+        },
+        {
+          "glob": ".mise.toml"
+        },
+        {
+          "glob": "mise.*.toml"
+        },
+        {
+          "glob": ".mise.*.toml"
+        },
+        {
+          "glob": "mise/config.toml"
+        },
+        {
+          "glob": ".mise/config.toml"
+        },
+        {
+          "glob": ".config/mise.toml"
+        },
+        {
+          "glob": ".config/mise/conf.d/*.toml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "taplo",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "tombi",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "mojo",
+      "language_id": null,
+      "scope": "source.mojo",
+      "file_types": [
+        {
+          "ext": "mojo"
+        },
+        {
+          "ext": "🔥"
+        }
+      ],
+      "roots": [
+        "pixi.toml",
+        "pixi.lock"
+      ],
+      "servers": [
+        {
+          "name": "mojo-lsp-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "move",
+      "language_id": null,
+      "scope": "source.move",
+      "file_types": [
+        {
+          "ext": "move"
+        }
+      ],
+      "roots": [
+        "Move.toml"
+      ],
+      "servers": []
+    },
+    {
+      "name": "msbuild",
+      "language_id": null,
+      "scope": "source.msbuild",
+      "file_types": [
+        {
+          "ext": "proj"
+        },
+        {
+          "ext": "vbproj"
+        },
+        {
+          "ext": "csproj"
+        },
+        {
+          "ext": "fsproj"
+        },
+        {
+          "ext": "targets"
+        },
+        {
+          "ext": "props"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "nasm",
+      "language_id": null,
+      "scope": "source.nasm",
+      "file_types": [
+        {
+          "ext": "asm"
+        },
+        {
+          "ext": "S"
+        },
+        {
+          "ext": "nasm"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "asm-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "nearley",
+      "language_id": null,
+      "scope": "source.nearley",
+      "file_types": [
+        {
+          "ext": "ne"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "nestedtext",
+      "language_id": null,
+      "scope": "text.nested",
+      "file_types": [
+        {
+          "ext": "nt"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "nginx",
+      "language_id": null,
+      "scope": "source.nginx",
+      "file_types": [
+        {
+          "glob": "sites-available/*.conf"
+        },
+        {
+          "glob": "sites-enabled/*.conf"
+        },
+        {
+          "glob": "nginx.conf"
+        },
+        {
+          "glob": "conf.d/*.conf"
+        }
+      ],
+      "roots": [
+        "nginx.conf"
+      ],
+      "servers": []
+    },
+    {
+      "name": "nickel",
+      "language_id": null,
+      "scope": "source.nickel",
+      "file_types": [
+        {
+          "ext": "ncl"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "nls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "nim",
+      "language_id": null,
+      "scope": "source.nim",
+      "file_types": [
+        {
+          "ext": "nim"
+        },
+        {
+          "ext": "nims"
+        },
+        {
+          "ext": "nimble"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "nimlangserver",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "nix",
+      "language_id": null,
+      "scope": "source.nix",
+      "file_types": [
+        {
+          "ext": "nix"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "nil",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "nixd",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "nu",
+      "language_id": null,
+      "scope": "source.nu",
+      "file_types": [
+        {
+          "ext": "nu"
+        },
+        {
+          "ext": "nuon"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "nu-lsp",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "nu-lint",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "nunjucks",
+      "language_id": null,
+      "scope": "text.html.nunjucks",
+      "file_types": [
+        {
+          "ext": "njk"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "ocaml",
+      "language_id": null,
+      "scope": "source.ocaml",
+      "file_types": [
+        {
+          "ext": "ml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "ocamllsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "ocaml-interface",
+      "language_id": null,
+      "scope": "source.ocaml.interface",
+      "file_types": [
+        {
+          "ext": "mli"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "ocamllsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "odin",
+      "language_id": null,
+      "scope": "source.odin",
+      "file_types": [
+        {
+          "ext": "odin"
+        }
+      ],
+      "roots": [
+        "ols.json",
+        "main.odin"
+      ],
+      "servers": [
+        {
+          "name": "ols",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "ohm",
+      "language_id": null,
+      "scope": "source.ohm",
+      "file_types": [
+        {
+          "ext": "ohm"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "opencl",
+      "language_id": null,
+      "scope": "source.cl",
+      "file_types": [
+        {
+          "ext": "cl"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "clangd",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "openscad",
+      "language_id": null,
+      "scope": "source.openscad",
+      "file_types": [
+        {
+          "ext": "scad"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "openscad-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "org",
+      "language_id": null,
+      "scope": "source.org",
+      "file_types": [
+        {
+          "ext": "org"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "pascal",
+      "language_id": null,
+      "scope": "source.pascal",
+      "file_types": [
+        {
+          "ext": "pas"
+        },
+        {
+          "ext": "pp"
+        },
+        {
+          "ext": "inc"
+        },
+        {
+          "ext": "lpr"
+        },
+        {
+          "ext": "lfm"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "pasls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "passwd",
+      "language_id": null,
+      "scope": "source.passwd",
+      "file_types": [
+        {
+          "glob": "passwd"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "pem",
+      "language_id": null,
+      "scope": "source.pem",
+      "file_types": [
+        {
+          "ext": "pem"
+        },
+        {
+          "ext": "cert"
+        },
+        {
+          "ext": "crt"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "penrose",
+      "language_id": null,
+      "scope": "source.penrose",
+      "file_types": [
+        {
+          "ext": "substance"
+        },
+        {
+          "ext": "style"
+        },
+        {
+          "ext": "domain"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "perl",
+      "language_id": null,
+      "scope": "source.perl",
+      "file_types": [
+        {
+          "ext": "pl"
+        },
+        {
+          "ext": "pm"
+        },
+        {
+          "ext": "t"
+        },
+        {
+          "ext": "psgi"
+        },
+        {
+          "ext": "raku"
+        },
+        {
+          "ext": "rakumod"
+        },
+        {
+          "ext": "rakutest"
+        },
+        {
+          "ext": "rakudoc"
+        },
+        {
+          "ext": "nqp"
+        },
+        {
+          "ext": "p6"
+        },
+        {
+          "ext": "pl6"
+        },
+        {
+          "ext": "pm6"
+        },
+        {
+          "glob": "latexmkrc"
+        },
+        {
+          "glob": ".latexmkrc"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "perlnavigator",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "pest",
+      "language_id": null,
+      "scope": "source.pest",
+      "file_types": [
+        {
+          "ext": "pest"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "pest-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "php",
+      "language_id": null,
+      "scope": "source.php",
+      "file_types": [
+        {
+          "ext": "php"
+        },
+        {
+          "ext": "inc"
+        },
+        {
+          "ext": "php4"
+        },
+        {
+          "ext": "php5"
+        },
+        {
+          "ext": "phtml"
+        },
+        {
+          "ext": "ctp"
+        }
+      ],
+      "roots": [
+        "composer.json",
+        "index.php"
+      ],
+      "servers": [
+        {
+          "name": "intelephense",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "php-only",
+      "language_id": null,
+      "scope": "source.php-only",
+      "file_types": [],
+      "roots": [
+        "composer.json",
+        "index.php"
+      ],
+      "servers": []
+    },
+    {
+      "name": "picat",
+      "language_id": "picat",
+      "scope": "source.picat",
+      "file_types": [
+        {
+          "ext": "pi"
+        },
+        {
+          "ext": "picat"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "pip-requirements",
+      "language_id": null,
+      "scope": "source.pip-requirements",
+      "file_types": [
+        {
+          "glob": "requirements.txt"
+        },
+        {
+          "glob": "constraints.txt"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "pkgbuild",
+      "language_id": null,
+      "scope": "source.bash",
+      "file_types": [
+        {
+          "glob": "PKGBUILD"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "termux-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "bash-language-server",
+          "only": [],
+          "except": [
+            "diagnostics"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pkl",
+      "language_id": null,
+      "scope": "source.pkl",
+      "file_types": [
+        {
+          "ext": "pkl"
+        },
+        {
+          "ext": "pcf"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "pkl-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "po",
+      "language_id": null,
+      "scope": "source.po",
+      "file_types": [
+        {
+          "ext": "po"
+        },
+        {
+          "ext": "pot"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "pod",
+      "language_id": null,
+      "scope": "source.pod",
+      "file_types": [
+        {
+          "ext": "pod"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "ponylang",
+      "language_id": null,
+      "scope": "source.pony",
+      "file_types": [
+        {
+          "ext": "pony"
+        }
+      ],
+      "roots": [
+        "corral.json",
+        "lock.json"
+      ],
+      "servers": []
+    },
+    {
+      "name": "powershell",
+      "language_id": null,
+      "scope": "source.powershell",
+      "file_types": [
+        {
+          "ext": "ps1"
+        },
+        {
+          "ext": "psm1"
+        },
+        {
+          "ext": "psd1"
+        },
+        {
+          "ext": "pscc"
+        },
+        {
+          "ext": "psrc"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "prisma",
+      "language_id": null,
+      "scope": "source.prisma",
+      "file_types": [
+        {
+          "ext": "prisma"
+        }
+      ],
+      "roots": [
+        "package.json"
+      ],
+      "servers": [
+        {
+          "name": "prisma-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "prolog",
+      "language_id": null,
+      "scope": "source.prolog",
+      "file_types": [
+        {
+          "ext": "pl"
+        },
+        {
+          "ext": "prolog"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "swipl",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "properties",
+      "language_id": null,
+      "scope": "source.properties",
+      "file_types": [
+        {
+          "ext": "properties"
+        },
+        {
+          "ext": "prefs"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "protobuf",
+      "language_id": null,
+      "scope": "source.proto",
+      "file_types": [
+        {
+          "ext": "proto"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "buf",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "pbkit",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "protols",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "prql",
+      "language_id": null,
+      "scope": "source.prql",
+      "file_types": [
+        {
+          "ext": "prql"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "pug",
+      "language_id": null,
+      "scope": "source.pug",
+      "file_types": [
+        {
+          "ext": "pug"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "purescript",
+      "language_id": null,
+      "scope": "source.purescript",
+      "file_types": [
+        {
+          "ext": "purs"
+        }
+      ],
+      "roots": [
+        "spago.yaml",
+        "spago.dhall",
+        "bower.json"
+      ],
+      "servers": [
+        {
+          "name": "purescript-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "python",
+      "language_id": null,
+      "scope": "source.python",
+      "file_types": [
+        {
+          "ext": "py"
+        },
+        {
+          "ext": "pyi"
+        },
+        {
+          "ext": "py3"
+        },
+        {
+          "ext": "pyw"
+        },
+        {
+          "ext": "ptl"
+        },
+        {
+          "ext": "rpy"
+        },
+        {
+          "ext": "cpy"
+        },
+        {
+          "ext": "ipy"
+        },
+        {
+          "ext": "pyt"
+        },
+        {
+          "glob": ".python_history"
+        },
+        {
+          "glob": ".pythonstartup"
+        },
+        {
+          "glob": ".pythonrc"
+        },
+        {
+          "glob": "*SConstruct"
+        },
+        {
+          "glob": "*SConscript"
+        },
+        {
+          "glob": "*sconstruct"
+        }
+      ],
+      "roots": [
+        "pyproject.toml",
+        "setup.py",
+        "poetry.lock",
+        "pyrightconfig.json"
+      ],
+      "servers": [
+        {
+          "name": "ty",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "ruff",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "jedi",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "pylsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "qml",
+      "language_id": null,
+      "scope": "source.qml",
+      "file_types": [
+        {
+          "ext": "qml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "qmlls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "qmv",
+      "language_id": null,
+      "scope": "source.qmv",
+      "file_types": [
+        {
+          "glob": "/tmp/qmv*"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "quarto",
+      "language_id": "qmd",
+      "scope": "source.qmd",
+      "file_types": [
+        {
+          "ext": "qmd"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "quint",
+      "language_id": null,
+      "scope": "source.quint",
+      "file_types": [
+        {
+          "ext": "qnt"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "quint-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "r",
+      "language_id": null,
+      "scope": "source.r",
+      "file_types": [
+        {
+          "ext": "r"
+        },
+        {
+          "ext": "R"
+        },
+        {
+          "glob": ".Rprofile"
+        },
+        {
+          "glob": "Rprofile.site"
+        },
+        {
+          "glob": ".RHistory"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "r",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "racket",
+      "language_id": null,
+      "scope": "source.racket",
+      "file_types": [
+        {
+          "ext": "rkt"
+        },
+        {
+          "ext": "rktd"
+        },
+        {
+          "ext": "rktl"
+        },
+        {
+          "ext": "scrbl"
+        },
+        {
+          "ext": "zuo"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "racket",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "regex",
+      "language_id": null,
+      "scope": "source.regex",
+      "file_types": [
+        {
+          "ext": "regex"
+        },
+        {
+          "glob": ".Rbuildignore"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "rego",
+      "language_id": null,
+      "scope": "source.rego",
+      "file_types": [
+        {
+          "ext": "rego"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "regols",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "rescript",
+      "language_id": null,
+      "scope": "source.rescript",
+      "file_types": [
+        {
+          "ext": "res"
+        }
+      ],
+      "roots": [
+        "bsconfig.json"
+      ],
+      "servers": [
+        {
+          "name": "rescript-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "ripple",
+      "language_id": null,
+      "scope": "source.ripple",
+      "file_types": [
+        {
+          "ext": "ripple"
+        }
+      ],
+      "roots": [
+        "package.json"
+      ],
+      "servers": [
+        {
+          "name": "ripple-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "rmarkdown",
+      "language_id": "rmd",
+      "scope": "source.rmd",
+      "file_types": [
+        {
+          "ext": "rmd"
+        },
+        {
+          "ext": "Rmd"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "r",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "robot",
+      "language_id": null,
+      "scope": "source.robot",
+      "file_types": [
+        {
+          "ext": "robot"
+        },
+        {
+          "ext": "resource"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "robotcode",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "robotframework_ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "robots.txt",
+      "language_id": null,
+      "scope": "source.robots.txt",
+      "file_types": [
+        {
+          "glob": "robots.txt"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "ron",
+      "language_id": null,
+      "scope": "source.ron",
+      "file_types": [
+        {
+          "ext": "ron"
+        }
+      ],
+      "roots": [
+        "Cargo.toml"
+      ],
+      "servers": [
+        {
+          "name": "ron-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "rpmspec",
+      "language_id": null,
+      "scope": "source.rpmspec",
+      "file_types": [
+        {
+          "ext": "spec"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "rshtml",
+      "language_id": null,
+      "scope": "source.rshtml",
+      "file_types": [
+        {
+          "glob": "*.rs.html"
+        }
+      ],
+      "roots": [
+        "Cargo.lock",
+        "Cargo.toml"
+      ],
+      "servers": [
+        {
+          "name": "rshtml-analyzer",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "vscode-html-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "superhtml",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "rst",
+      "language_id": null,
+      "scope": "source.rst",
+      "file_types": [
+        {
+          "ext": "rst"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "ruby",
+      "language_id": null,
+      "scope": "source.ruby",
+      "file_types": [
+        {
+          "ext": "rb"
+        },
+        {
+          "ext": "rake"
+        },
+        {
+          "ext": "irb"
+        },
+        {
+          "ext": "gemspec"
+        },
+        {
+          "ext": "rabl"
+        },
+        {
+          "ext": "jbuilder"
+        },
+        {
+          "ext": "jb"
+        },
+        {
+          "ext": "podspec"
+        },
+        {
+          "ext": "rjs"
+        },
+        {
+          "ext": "rbi"
+        },
+        {
+          "ext": "rbs"
+        },
+        {
+          "glob": "rakefile"
+        },
+        {
+          "glob": "gemfile"
+        },
+        {
+          "glob": "Rakefile"
+        },
+        {
+          "glob": "Gemfile"
+        },
+        {
+          "glob": "Podfile"
+        },
+        {
+          "glob": "Vagrantfile"
+        },
+        {
+          "glob": "Brewfile"
+        },
+        {
+          "glob": "Guardfile"
+        },
+        {
+          "glob": "Capfile"
+        },
+        {
+          "glob": "Cheffile"
+        },
+        {
+          "glob": "Hobofile"
+        },
+        {
+          "glob": "Appraisals"
+        },
+        {
+          "glob": "Rantfile"
+        },
+        {
+          "glob": "Berksfile"
+        },
+        {
+          "glob": "Berksfile.lock"
+        },
+        {
+          "glob": "Thorfile"
+        },
+        {
+          "glob": "Puppetfile"
+        },
+        {
+          "glob": "Fastfile"
+        },
+        {
+          "glob": "Appfile"
+        },
+        {
+          "glob": "Deliverfile"
+        },
+        {
+          "glob": "Matchfile"
+        },
+        {
+          "glob": "Scanfile"
+        },
+        {
+          "glob": "Snapfile"
+        },
+        {
+          "glob": "Gymfile"
+        },
+        {
+          "glob": ".irbrc"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "ruby-lsp",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "solargraph",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "rust",
+      "language_id": null,
+      "scope": "source.rust",
+      "file_types": [
+        {
+          "ext": "rs"
+        }
+      ],
+      "roots": [
+        "Cargo.toml",
+        "Cargo.lock"
+      ],
+      "servers": [
+        {
+          "name": "rust-analyzer",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "rust-format-args",
+      "language_id": null,
+      "scope": "source.rust-format-args",
+      "file_types": [],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "rust-format-args-macro",
+      "language_id": null,
+      "scope": "source.rust-format-args-macro",
+      "file_types": [],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "sage",
+      "language_id": null,
+      "scope": "source.sage",
+      "file_types": [
+        {
+          "ext": "sage"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "scala",
+      "language_id": null,
+      "scope": "source.scala",
+      "file_types": [
+        {
+          "ext": "scala"
+        },
+        {
+          "ext": "sbt"
+        },
+        {
+          "ext": "sc"
+        }
+      ],
+      "roots": [
+        "build.sbt",
+        "build.sc",
+        "build.gradle",
+        "build.gradle.kts",
+        "pom.xml",
+        ".scala-build"
+      ],
+      "servers": [
+        {
+          "name": "metals",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "scfg",
+      "language_id": null,
+      "scope": "source.scfg",
+      "file_types": [
+        {
+          "glob": "kanshi/config"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "scheme",
+      "language_id": null,
+      "scope": "source.scheme",
+      "file_types": [
+        {
+          "ext": "ss"
+        },
+        {
+          "ext": "scm"
+        },
+        {
+          "ext": "sld"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "scss",
+      "language_id": null,
+      "scope": "source.scss",
+      "file_types": [
+        {
+          "ext": "scss"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "vscode-css-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "shellcheckrc",
+      "language_id": null,
+      "scope": "source.shellcheckrc",
+      "file_types": [
+        {
+          "glob": "shellcheckrc"
+        },
+        {
+          "glob": ".shellcheckrc"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "slang",
+      "language_id": null,
+      "scope": "source.lang",
+      "file_types": [
+        {
+          "ext": "slang"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "slangd",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "slint",
+      "language_id": null,
+      "scope": "source.slint",
+      "file_types": [
+        {
+          "ext": "slint"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "slint-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "slisp",
+      "language_id": null,
+      "scope": "source.sl",
+      "file_types": [
+        {
+          "ext": "sl"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "smali",
+      "language_id": null,
+      "scope": "source.smali",
+      "file_types": [
+        {
+          "ext": "smali"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "smalisp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "smithy",
+      "language_id": null,
+      "scope": "source.smithy",
+      "file_types": [
+        {
+          "ext": "smithy"
+        }
+      ],
+      "roots": [
+        "smithy-build.json"
+      ],
+      "servers": [
+        {
+          "name": "cs",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "sml",
+      "language_id": null,
+      "scope": "source.sml",
+      "file_types": [
+        {
+          "ext": "sml"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "snakemake",
+      "language_id": null,
+      "scope": "source.snakemake",
+      "file_types": [
+        {
+          "ext": "smk"
+        },
+        {
+          "glob": "Snakefile"
+        }
+      ],
+      "roots": [
+        "Snakefile",
+        "config.yaml",
+        "environment.yaml",
+        "workflow/"
+      ],
+      "servers": [
+        {
+          "name": "pylsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "solidity",
+      "language_id": null,
+      "scope": "source.sol",
+      "file_types": [
+        {
+          "ext": "sol"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "solc",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "sourcepawn",
+      "language_id": null,
+      "scope": "source.sourcepawn",
+      "file_types": [
+        {
+          "ext": "sp"
+        },
+        {
+          "ext": "inc"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "sourcepawn-studio",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "spade",
+      "language_id": null,
+      "scope": "source.spade",
+      "file_types": [
+        {
+          "ext": "spade"
+        }
+      ],
+      "roots": [
+        "swim.toml"
+      ],
+      "servers": [
+        {
+          "name": "spade-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "spicedb",
+      "language_id": null,
+      "scope": "source.zed",
+      "file_types": [
+        {
+          "ext": "zed"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "sql",
+      "language_id": null,
+      "scope": "source.sql",
+      "file_types": [
+        {
+          "ext": "sql"
+        },
+        {
+          "ext": "dsql"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "sshclientconfig",
+      "language_id": null,
+      "scope": "source.sshclientconfig",
+      "file_types": [
+        {
+          "glob": ".ssh/config"
+        },
+        {
+          "glob": "/etc/ssh/ssh_config"
+        },
+        {
+          "glob": "ssh_config.d/*.conf"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "starlark",
+      "language_id": null,
+      "scope": "source.starlark",
+      "file_types": [
+        {
+          "ext": "bzl"
+        },
+        {
+          "ext": "bazel"
+        },
+        {
+          "ext": "star"
+        },
+        {
+          "glob": "BUILD"
+        },
+        {
+          "glob": "BUCK"
+        },
+        {
+          "glob": "BUILD.*"
+        },
+        {
+          "glob": "WORKSPACE"
+        },
+        {
+          "glob": "WORKSPACE.bzlmod"
+        },
+        {
+          "glob": "PACKAGE"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "starpls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "strace",
+      "language_id": null,
+      "scope": "source.strace",
+      "file_types": [
+        {
+          "ext": "strace"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "strictdoc",
+      "language_id": null,
+      "scope": "source.strictdoc",
+      "file_types": [
+        {
+          "ext": "sdoc"
+        },
+        {
+          "ext": "sgra"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "supercollider",
+      "language_id": null,
+      "scope": "source.supercollider",
+      "file_types": [
+        {
+          "ext": "scd"
+        },
+        {
+          "ext": "sc"
+        },
+        {
+          "ext": "quark"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "svelte",
+      "language_id": null,
+      "scope": "source.svelte",
+      "file_types": [
+        {
+          "ext": "svelte"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "svelteserver",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "sway",
+      "language_id": null,
+      "scope": "source.sway",
+      "file_types": [
+        {
+          "ext": "sw"
+        }
+      ],
+      "roots": [
+        "Forc.toml",
+        "Forc.lock"
+      ],
+      "servers": [
+        {
+          "name": "forc",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "swift",
+      "language_id": null,
+      "scope": "source.swift",
+      "file_types": [
+        {
+          "ext": "swift"
+        },
+        {
+          "ext": "swiftinterface"
+        }
+      ],
+      "roots": [
+        "Package.swift"
+      ],
+      "servers": [
+        {
+          "name": "sourcekit-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "systemd",
+      "language_id": null,
+      "scope": "source.ini",
+      "file_types": [
+        {
+          "ext": "service"
+        },
+        {
+          "ext": "automount"
+        },
+        {
+          "ext": "device"
+        },
+        {
+          "ext": "mount"
+        },
+        {
+          "ext": "nspawn"
+        },
+        {
+          "ext": "path"
+        },
+        {
+          "ext": "scope"
+        },
+        {
+          "ext": "slice"
+        },
+        {
+          "ext": "socket"
+        },
+        {
+          "ext": "swap"
+        },
+        {
+          "ext": "target"
+        },
+        {
+          "ext": "timer"
+        },
+        {
+          "glob": "systemd/**/*.conf"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "systemd-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "systemverilog",
+      "language_id": null,
+      "scope": "source.systemverilog",
+      "file_types": [
+        {
+          "ext": "sv"
+        },
+        {
+          "ext": "svh"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "svlangserver",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "verible-verilog-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "t32",
+      "language_id": null,
+      "scope": "source.t32",
+      "file_types": [
+        {
+          "ext": "cmm"
+        },
+        {
+          "ext": "t32"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "tablegen",
+      "language_id": null,
+      "scope": "source.tablegen",
+      "file_types": [
+        {
+          "ext": "td"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "tact",
+      "language_id": null,
+      "scope": "source.tact",
+      "file_types": [
+        {
+          "ext": "tact"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "task",
+      "language_id": null,
+      "scope": "source.task",
+      "file_types": [
+        {
+          "ext": "task"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "tcl",
+      "language_id": null,
+      "scope": "source.tcl",
+      "file_types": [
+        {
+          "ext": "tcl"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "teal",
+      "language_id": null,
+      "scope": "source.tl",
+      "file_types": [
+        {
+          "ext": "tl"
+        }
+      ],
+      "roots": [
+        "tlconfig.lua"
+      ],
+      "servers": [
+        {
+          "name": "teal-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "templ",
+      "language_id": null,
+      "scope": "source.templ",
+      "file_types": [
+        {
+          "ext": "templ"
+        }
+      ],
+      "roots": [
+        "go.work",
+        "go.mod"
+      ],
+      "servers": [
+        {
+          "name": "templ",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "tera",
+      "language_id": null,
+      "scope": "source.tera",
+      "file_types": [
+        {
+          "ext": "tera"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "textproto",
+      "language_id": null,
+      "scope": "source.textproto",
+      "file_types": [
+        {
+          "ext": "txtpb"
+        },
+        {
+          "ext": "textpb"
+        },
+        {
+          "ext": "textproto"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "tfvars",
+      "language_id": "terraform-vars",
+      "scope": "source.tfvars",
+      "file_types": [
+        {
+          "ext": "tfvars"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "terraform-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "thrift",
+      "language_id": null,
+      "scope": "source.thrift",
+      "file_types": [
+        {
+          "ext": "thrift"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "tilt",
+      "language_id": null,
+      "scope": "source.tilt",
+      "file_types": [
+        {
+          "glob": "Tiltfile"
+        },
+        {
+          "ext": "tiltfile"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "tilt",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "tlaplus",
+      "language_id": null,
+      "scope": "scope.tlaplus",
+      "file_types": [
+        {
+          "ext": "tla"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "todotxt",
+      "language_id": null,
+      "scope": "text.todotxt",
+      "file_types": [
+        {
+          "glob": "*.todo.txt"
+        },
+        {
+          "ext": "todotxt"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "toml",
+      "language_id": null,
+      "scope": "source.toml",
+      "file_types": [
+        {
+          "ext": "toml"
+        },
+        {
+          "glob": "pdm.lock"
+        },
+        {
+          "glob": "poetry.lock"
+        },
+        {
+          "glob": "Cargo.lock"
+        },
+        {
+          "glob": "uv.lock"
+        },
+        {
+          "glob": "containers.conf"
+        },
+        {
+          "glob": "containers.conf.d/*.conf"
+        },
+        {
+          "glob": "containers.conf.modules/*.conf"
+        },
+        {
+          "glob": "mounts.conf"
+        },
+        {
+          "glob": "policy.conf"
+        },
+        {
+          "glob": "registries.conf"
+        },
+        {
+          "glob": "storage.conf"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "taplo",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "tombi",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "tsq",
+      "language_id": null,
+      "scope": "source.tsq",
+      "file_types": [
+        {
+          "glob": "queries/*.scm"
+        },
+        {
+          "glob": "injections.scm"
+        },
+        {
+          "glob": "highlights.scm"
+        },
+        {
+          "glob": "indents.scm"
+        },
+        {
+          "glob": "textobjects.scm"
+        },
+        {
+          "glob": "locals.scm"
+        },
+        {
+          "glob": "tags.scm"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "ts_query_ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "tsx",
+      "language_id": "typescriptreact",
+      "scope": "source.tsx",
+      "file_types": [
+        {
+          "ext": "tsx"
+        }
+      ],
+      "roots": [
+        "package.json",
+        "tsconfig.json"
+      ],
+      "servers": [
+        {
+          "name": "typescript-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "twig",
+      "language_id": null,
+      "scope": "source.twig",
+      "file_types": [
+        {
+          "ext": "twig"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "typescript",
+      "language_id": "typescript",
+      "scope": "source.ts",
+      "file_types": [
+        {
+          "ext": "ts"
+        },
+        {
+          "ext": "mts"
+        },
+        {
+          "ext": "cts"
+        }
+      ],
+      "roots": [
+        "package.json",
+        "tsconfig.json"
+      ],
+      "servers": [
+        {
+          "name": "typescript-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "typespec",
+      "language_id": "typespec",
+      "scope": "source.typespec",
+      "file_types": [
+        {
+          "ext": "tsp"
+        }
+      ],
+      "roots": [
+        "tspconfig.yaml"
+      ],
+      "servers": [
+        {
+          "name": "typespec",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "typst",
+      "language_id": null,
+      "scope": "source.typst",
+      "file_types": [
+        {
+          "ext": "typst"
+        },
+        {
+          "ext": "typ"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "tinymist",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "ungrammar",
+      "language_id": null,
+      "scope": "source.ungrammar",
+      "file_types": [
+        {
+          "ext": "ungram"
+        },
+        {
+          "ext": "ungrammar"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "unison",
+      "language_id": null,
+      "scope": "source.unison",
+      "file_types": [
+        {
+          "ext": "u"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "uxntal",
+      "language_id": null,
+      "scope": "source.tal",
+      "file_types": [
+        {
+          "ext": "tal"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "v",
+      "language_id": null,
+      "scope": "source.v",
+      "file_types": [
+        {
+          "ext": "v"
+        },
+        {
+          "ext": "vv"
+        },
+        {
+          "ext": "vsh"
+        }
+      ],
+      "roots": [
+        "v.mod"
+      ],
+      "servers": [
+        {
+          "name": "vlang-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "vala",
+      "language_id": null,
+      "scope": "source.vala",
+      "file_types": [
+        {
+          "ext": "vala"
+        },
+        {
+          "ext": "vapi"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "vala-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "vento",
+      "language_id": null,
+      "scope": "text.html.vto",
+      "file_types": [
+        {
+          "ext": "vto"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "verilog",
+      "language_id": null,
+      "scope": "source.verilog",
+      "file_types": [
+        {
+          "ext": "v"
+        },
+        {
+          "ext": "vh"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "verible-verilog-ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "vhdl",
+      "language_id": null,
+      "scope": "source.vhdl",
+      "file_types": [
+        {
+          "ext": "vhd"
+        },
+        {
+          "ext": "vhdl"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "vhdl_ls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "vhs",
+      "language_id": null,
+      "scope": "source.vhs",
+      "file_types": [
+        {
+          "ext": "tape"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "vim",
+      "language_id": null,
+      "scope": "source.vim",
+      "file_types": [
+        {
+          "ext": "vim"
+        },
+        {
+          "glob": ".vimrc"
+        },
+        {
+          "glob": ".nvimrc"
+        },
+        {
+          "glob": ".exrc"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "vue",
+      "language_id": null,
+      "scope": "source.vue",
+      "file_types": [
+        {
+          "ext": "vue"
+        }
+      ],
+      "roots": [
+        "package.json"
+      ],
+      "servers": [
+        {
+          "name": "vuels",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "wast",
+      "language_id": null,
+      "scope": "source.wast",
+      "file_types": [
+        {
+          "ext": "wast"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "wat",
+      "language_id": null,
+      "scope": "source.wat",
+      "file_types": [
+        {
+          "ext": "wat"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "wasm-language-tools",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "webc",
+      "language_id": null,
+      "scope": "text.html.webc",
+      "file_types": [
+        {
+          "ext": "webc"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "werk",
+      "language_id": null,
+      "scope": "source.werk",
+      "file_types": [
+        {
+          "ext": "werk"
+        },
+        {
+          "glob": "Werkfile"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "wesl",
+      "language_id": null,
+      "scope": "source.wesl",
+      "file_types": [
+        {
+          "ext": "wesl"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "wgsl",
+      "language_id": null,
+      "scope": "source.wgsl",
+      "file_types": [
+        {
+          "ext": "wgsl"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "wgsl-analyzer",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "wikitext",
+      "language_id": null,
+      "scope": "source.wikitext",
+      "file_types": [
+        {
+          "ext": "wikimedia"
+        },
+        {
+          "ext": "mediawiki"
+        },
+        {
+          "ext": "wikitext"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "wikitext-lsp",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "wit",
+      "language_id": null,
+      "scope": "source.wit",
+      "file_types": [
+        {
+          "ext": "wit"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "woodpecker-ci",
+      "language_id": null,
+      "scope": "source.woodpecker-ci",
+      "file_types": [
+        {
+          "glob": ".woodpecker.yaml"
+        },
+        {
+          "glob": ".woodpecker/*.yaml"
+        },
+        {
+          "glob": ".woodpecker/*.yml"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "yaml-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "wren",
+      "language_id": null,
+      "scope": "source.wren",
+      "file_types": [
+        {
+          "ext": "wren"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "xit",
+      "language_id": null,
+      "scope": "source.xit",
+      "file_types": [
+        {
+          "ext": "xit"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "xml",
+      "language_id": null,
+      "scope": "source.xml",
+      "file_types": [
+        {
+          "ext": "ascx"
+        },
+        {
+          "ext": "atom"
+        },
+        {
+          "ext": "axaml"
+        },
+        {
+          "ext": "axml"
+        },
+        {
+          "ext": "bpmn"
+        },
+        {
+          "ext": "checkstyle"
+        },
+        {
+          "ext": "cpt"
+        },
+        {
+          "ext": "csl"
+        },
+        {
+          "ext": "csproj.user"
+        },
+        {
+          "ext": "dita"
+        },
+        {
+          "ext": "ditamap"
+        },
+        {
+          "ext": "dtml"
+        },
+        {
+          "ext": "fods"
+        },
+        {
+          "ext": "fodt"
+        },
+        {
+          "ext": "fxml"
+        },
+        {
+          "ext": "gir"
+        },
+        {
+          "ext": "glif"
+        },
+        {
+          "ext": "gml"
+        },
+        {
+          "ext": "gpx"
+        },
+        {
+          "ext": "iml"
+        },
+        {
+          "ext": "isml"
+        },
+        {
+          "ext": "itermcolors"
+        },
+        {
+          "ext": "jmx"
+        },
+        {
+          "ext": "kml"
+        },
+        {
+          "ext": "launch"
+        },
+        {
+          "ext": "menu"
+        },
+        {
+          "ext": "mobileconfig"
+        },
+        {
+          "ext": "mpd"
+        },
+        {
+          "ext": "musicxml"
+        },
+        {
+          "ext": "mxml"
+        },
+        {
+          "ext": "ncx"
+        },
+        {
+          "ext": "nuspec"
+        },
+        {
+          "ext": "opml"
+        },
+        {
+          "ext": "osc"
+        },
+        {
+          "ext": "osm"
+        },
+        {
+          "ext": "plist"
+        },
+        {
+          "ext": "policy"
+        },
+        {
+          "ext": "pt"
+        },
+        {
+          "ext": "publishsettings"
+        },
+        {
+          "ext": "pubxml"
+        },
+        {
+          "ext": "pubxml.user"
+        },
+        {
+          "ext": "rbxlx"
+        },
+        {
+          "ext": "rbxmx"
+        },
+        {
+          "ext": "resx"
+        },
+        {
+          "ext": "rng"
+        },
+        {
+          "ext": "rss"
+        },
+        {
+          "ext": "shproj"
+        },
+        {
+          "ext": "smil"
+        },
+        {
+          "ext": "storyboard"
+        },
+        {
+          "ext": "sublime-snippet"
+        },
+        {
+          "ext": "svg"
+        },
+        {
+          "ext": "terminal"
+        },
+        {
+          "ext": "tld"
+        },
+        {
+          "ext": "tmx"
+        },
+        {
+          "ext": "ui"
+        },
+        {
+          "ext": "vbproj.user"
+        },
+        {
+          "ext": "vcxproj"
+        },
+        {
+          "ext": "vcxproj.filters"
+        },
+        {
+          "ext": "wixproj"
+        },
+        {
+          "ext": "wsdl"
+        },
+        {
+          "ext": "wxi"
+        },
+        {
+          "ext": "wxs"
+        },
+        {
+          "ext": "xaml"
+        },
+        {
+          "ext": "xbl"
+        },
+        {
+          "ext": "xib"
+        },
+        {
+          "ext": "xlf"
+        },
+        {
+          "ext": "xliff"
+        },
+        {
+          "ext": "xml"
+        },
+        {
+          "ext": "xmp"
+        },
+        {
+          "ext": "xoml"
+        },
+        {
+          "ext": "xpdl"
+        },
+        {
+          "ext": "xrc"
+        },
+        {
+          "ext": "xsd"
+        },
+        {
+          "ext": "xsl"
+        },
+        {
+          "ext": "xul"
+        },
+        {
+          "glob": "*.tm[Ll]anguage"
+        },
+        {
+          "glob": "*.tm[Pp]references"
+        },
+        {
+          "glob": "*.tm[Tt]heme"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "xtc",
+      "language_id": null,
+      "scope": "source.xtc",
+      "file_types": [
+        {
+          "ext": "xtc"
+        },
+        {
+          "ext": "xpc"
+        },
+        {
+          "ext": "xoa"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "yaml",
+      "language_id": null,
+      "scope": "source.yaml",
+      "file_types": [
+        {
+          "ext": "yml"
+        },
+        {
+          "ext": "yaml"
+        },
+        {
+          "glob": ".prettierrc"
+        },
+        {
+          "glob": ".clangd"
+        },
+        {
+          "glob": ".clang-format"
+        },
+        {
+          "glob": ".clang-tidy"
+        },
+        {
+          "glob": ".gem/credentials"
+        },
+        {
+          "glob": ".kube/config"
+        },
+        {
+          "glob": ".kube/kuberc"
+        },
+        {
+          "glob": "yarn.lock"
+        },
+        {
+          "ext": "sublime-syntax"
+        },
+        {
+          "ext": "bu"
+        },
+        {
+          "glob": ".stylelintrc"
+        },
+        {
+          "glob": ".puppeteerrc"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "yaml-language-server",
+          "only": [],
+          "except": []
+        },
+        {
+          "name": "ansible-language-server",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "yara",
+      "language_id": null,
+      "scope": "source.yara",
+      "file_types": [
+        {
+          "ext": "yara"
+        },
+        {
+          "ext": "yar"
+        }
+      ],
+      "roots": [],
+      "servers": [
+        {
+          "name": "yls",
+          "only": [],
+          "except": []
+        }
+      ]
+    },
+    {
+      "name": "yuck",
+      "language_id": null,
+      "scope": "source.yuck",
+      "file_types": [
+        {
+          "ext": "yuck"
+        }
+      ],
+      "roots": [],
+      "servers": []
+    },
+    {
+      "name": "zig",
+      "language_id": null,
+      "scope": "source.zig",
+      "file_types": [
+        {
+          "ext": "zig"
+        },
+        {
+          "ext": "zon"
+        }
+      ],
+      "roots": [
+        "build.zig"
+      ],
+      "servers": [
+        {
+          "name": "zls",
+          "only": [],
+          "except": []
+        }
+      ]
+    }
+  ]
+}
