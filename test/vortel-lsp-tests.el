@@ -9,6 +9,7 @@
 (require 'ert)
 
 (require 'vortel-lsp-test-helpers)
+(require 'vortel-lsp-apply-edit-tests)
 (require 'vortel-lsp-completion-tests)
 (require 'vortel-lsp-actions-rename-tests)
 

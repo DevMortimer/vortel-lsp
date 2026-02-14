@@ -60,6 +60,14 @@
                  (kill-buffer (current-buffer))))))
        (ignore-errors (delete-directory temp-dir t)))))
 
+(defmacro vortel-lsp-test-with-temp-dir (var &rest body)
+  "Bind VAR to a temporary directory while evaluating BODY."
+  (declare (indent 1) (debug (symbolp body)))
+  `(let ((,var (make-temp-file "vortel-lsp-test-" t)))
+     (unwind-protect
+         (progn ,@body)
+       (ignore-errors (delete-directory ,var t)))))
+
 (provide 'vortel-lsp-test-helpers)
 
 ;;; vortel-lsp-test-helpers.el ends here
