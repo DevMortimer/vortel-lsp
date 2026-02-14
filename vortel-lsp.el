@@ -982,9 +982,9 @@ REPORT-FN is retained and reused on incoming diagnostics."
 
 (defun vortel-lsp--enable ()
   "Enable vortel-lsp in current buffer."
-  (unless buffer-file-name
-    (user-error "vortel-lsp requires a file-backed buffer"))
-  (let ((attachments (vortel-lsp-registry-attachments-for-path buffer-file-name)))
+  (if (not buffer-file-name)
+      (setq vortel-lsp-mode nil)
+    (let ((attachments (vortel-lsp-registry-attachments-for-path buffer-file-name)))
     (unless attachments
       (user-error "no language servers configured for this file"))
     (setq vortel-lsp--attachments attachments)
@@ -1043,7 +1043,7 @@ REPORT-FN is retained and reused on incoming diagnostics."
       (add-hook 'completion-at-point-functions #'vortel-lsp--completion-at-point nil t))
     (when vortel-lsp-enable-flymake
       (add-hook 'flymake-diagnostic-functions #'vortel-lsp--flymake-backend nil t)
-      (flymake-mode 1))))
+      (flymake-mode 1)))))
 
 (defun vortel-lsp--disable ()
   "Disable vortel-lsp in current buffer."
