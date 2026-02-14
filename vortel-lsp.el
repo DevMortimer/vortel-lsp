@@ -1334,16 +1334,19 @@ Return plist with `:ok' and optional `:reason'."
    (t nil)))
 
 (defun vortel-lsp--completion-item-text (item)
-  "Return insertion text for completion ITEM."
-  (let* ((label (or (vortel-lsp-hash-get item "label") ""))
+  "Return candidate text for completion ITEM."
+  (let* ((label (string-trim (or (vortel-lsp-hash-get item "label") "")))
+         (filter-text (vortel-lsp-hash-get item "filterText"))
          (text-edit (vortel-lsp-hash-get item "textEdit"))
          (new-text (and (hash-table-p text-edit)
                         (vortel-lsp-hash-get text-edit "newText")))
-         (insert-text (or new-text (vortel-lsp-hash-get item "insertText") label))
-         (insert-format (or (vortel-lsp-hash-get item "insertTextFormat") 1)))
-    (if (= insert-format 2)
-        label
-      insert-text)))
+         (insert-text (or new-text (vortel-lsp-hash-get item "insertText"))))
+    (cond
+     ((and (stringp filter-text) (not (string-empty-p filter-text))) filter-text)
+     ((not (string-empty-p label)) label)
+     ((and (stringp insert-text) (not (string-empty-p insert-text)))
+      (string-trim insert-text))
+     (t ""))))
 
 (defun vortel-lsp--completion-item-candidate (item client)
   "Build completion candidate string from ITEM provided by CLIENT."
