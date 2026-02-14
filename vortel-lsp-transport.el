@@ -44,6 +44,22 @@
    (t
     (error "Unsupported environment type: %S" environment))))
 
+(defun vortel-lsp-transport--maybe-prepend-node-bin (env dir)
+  "Return ENV with node_modules/.bin prepended to PATH if it exists under DIR."
+  (let ((bin-dir (expand-file-name "node_modules/.bin" dir)))
+    (if (file-directory-p bin-dir)
+        (let* ((path-entry (cl-find-if
+                            (lambda (e) (string-prefix-p "PATH=" e))
+                            env))
+               (new-path (if path-entry
+                             (concat "PATH=" bin-dir ":" (substring path-entry 5))
+                           (concat "PATH=" bin-dir))))
+          (cons new-path
+                (cl-remove-if
+                 (lambda (e) (string-prefix-p "PATH=" e))
+                 env)))
+      env)))
+
 (cl-defun vortel-lsp-transport-start
     (&key name command args cwd environment on-message on-exit on-stderr)
   "Start an LSP transport.
@@ -82,7 +98,9 @@ ON-STDERR is called as (fn transport chunk)."
                              (lambda (item)
                                (string-prefix-p prefix item))
                              merged)))))
-            merged))
+            (vortel-lsp-transport--maybe-prepend-node-bin
+             merged
+             (or cwd default-directory))))
          (default-directory
           (file-name-as-directory (expand-file-name (or cwd default-directory))))
          (process

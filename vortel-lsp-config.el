@@ -37,6 +37,18 @@ Supported plist keys:
   :type '(alist :key-type string :value-type plist)
   :group 'vortel-lsp)
 
+(defcustom vortel-lsp-extra-servers nil
+  "Extra servers to attach per language.
+Alist mapping language name strings to lists of server entry plists.
+Each entry plist requires :name and optionally :only/:except for feature filtering.
+
+Example:
+  \\='((\"svelte\" . ((:name \"tailwindcss-ls\")))
+    (\"typescript\" . ((:name \"tailwindcss-ls\"))))"
+  :type '(alist :key-type string
+                :value-type (repeat (plist :key-type symbol :value-type sexp)))
+  :group 'vortel-lsp)
+
 (defvar vortel-lsp--catalog-cache nil)
 (defvar vortel-lsp--glob-regex-cache (make-hash-table :test #'equal))
 
@@ -73,10 +85,39 @@ Supported plist keys:
       (vortel-lsp-hash-get language "name")
       ""))
 
+(defun vortel-lsp-config--extra-server-to-hash (plist)
+  "Convert a user PLIST server entry to a catalog-compatible hash-table.
+PLIST must contain :name, and may contain :only and :except."
+  (let ((ht (make-hash-table :test #'equal)))
+    (puthash "name" (plist-get plist :name) ht)
+    (when (plist-member plist :only)
+      (puthash "only" (plist-get plist :only) ht))
+    (when (plist-member plist :except)
+      (puthash "except" (plist-get plist :except) ht))
+    ht))
+
 (defun vortel-lsp-config-language-servers (language)
-  "Return server entries for LANGUAGE entry hash-table."
-  (or (vortel-lsp-hash-get language "servers")
-      '()))
+  "Return server entries for LANGUAGE entry hash-table.
+Merges catalog entries with `vortel-lsp-extra-servers', deduplicating
+by server name (catalog entries take priority)."
+  (let* ((catalog-servers (or (vortel-lsp-hash-get language "servers") '()))
+         (lang-name (or (vortel-lsp-hash-get language "name") ""))
+         (extras-raw (alist-get lang-name vortel-lsp-extra-servers nil nil #'string=))
+         (extras (mapcar #'vortel-lsp-config--extra-server-to-hash
+                         (or extras-raw '())))
+         (seen (make-hash-table :test #'equal))
+         (result '()))
+    (dolist (srv catalog-servers)
+      (let ((name (vortel-lsp-hash-get srv "name")))
+        (unless (gethash name seen)
+          (puthash name t seen)
+          (push srv result))))
+    (dolist (srv extras)
+      (let ((name (vortel-lsp-hash-get srv "name")))
+        (unless (gethash name seen)
+          (puthash name t seen)
+          (push srv result))))
+    (nreverse result)))
 
 (defun vortel-lsp-config-server-definition (server-name)
   "Resolve SERVER-NAME into a plist with merged overrides.
