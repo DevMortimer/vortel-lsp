@@ -23,6 +23,8 @@
 (require 'vortel-lsp-registry)
 (require 'vortel-lsp-util)
 
+(declare-function company-complete "company")
+
 (defcustom vortel-lsp-change-debounce 0.05
   "Seconds to debounce `textDocument/didChange` notifications."
   :type 'number
@@ -912,12 +914,13 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
                    (max 0 vortel-lsp-auto-completion-min-chars)))))))
 
 (defun vortel-lsp--auto-trigger-completion ()
-  "Invoke completion at point while guarding against recursive triggers." 
-  (when (and (not vortel-lsp--auto-completion-active)
-             (fboundp 'completion-at-point))
+  "Invoke completion at point while guarding against recursive triggers."
+  (when (not vortel-lsp--auto-completion-active)
     (let ((vortel-lsp--auto-completion-active t))
       (condition-case err
-          (completion-at-point)
+          (if (bound-and-true-p company-mode)
+              (company-complete)
+            (completion-at-point))
         (error
          (vortel-lsp-log "auto completion failed: %s" err))))))
 
@@ -982,8 +985,14 @@ REPORT-FN is retained and reused on incoming diagnostics."
 
 (defun vortel-lsp--enable ()
   "Enable vortel-lsp in current buffer."
-  (if (not buffer-file-name)
+  (cl-block vortel-lsp--enable
+    (when (not buffer-file-name)
       (setq vortel-lsp-mode nil)
+      (cl-return-from vortel-lsp--enable nil))
+    (when (derived-mode-p 'lisp-mode 'lisp-data-mode 'scheme-mode
+                          'clojure-mode 'racket-mode)
+      (setq vortel-lsp-mode nil)
+      (cl-return-from vortel-lsp--enable nil))
     (let ((attachments (vortel-lsp-registry-attachments-for-path buffer-file-name)))
     (unless attachments
       (user-error "no language servers configured for this file"))

@@ -59,6 +59,29 @@
         ;; HOME unchanged
         (should (member "HOME=/home/user" result))))))
 
+;;; --- exec-path includes node_modules/.bin ---
+
+(ert-deftest vortel-lsp-test-transport-find-node-bin-returns-path ()
+  "find-node-bin returns the bin dir when node_modules/.bin exists."
+  (vortel-lsp-test-with-temp-dir dir
+    (let ((bin-dir (expand-file-name "node_modules/.bin" dir)))
+      (make-directory bin-dir t)
+      (should (equal (vortel-lsp-transport--find-node-bin dir) bin-dir)))))
+
+(ert-deftest vortel-lsp-test-transport-find-node-bin-returns-nil ()
+  "find-node-bin returns nil when node_modules/.bin does not exist."
+  (vortel-lsp-test-with-temp-dir dir
+    (should (null (vortel-lsp-transport--find-node-bin dir)))))
+
+(ert-deftest vortel-lsp-test-transport-find-node-bin-searches-parents ()
+  "find-node-bin finds node_modules/.bin in a parent directory."
+  (vortel-lsp-test-with-temp-dir dir
+    (let ((bin-dir (expand-file-name "node_modules/.bin" dir))
+          (subdir (expand-file-name "src/components" dir)))
+      (make-directory bin-dir t)
+      (make-directory subdir t)
+      (should (equal (vortel-lsp-transport--find-node-bin subdir) bin-dir)))))
+
 (provide 'vortel-lsp-transport-tests)
 
 ;;; vortel-lsp-transport-tests.el ends here

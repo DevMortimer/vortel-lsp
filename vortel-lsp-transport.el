@@ -97,6 +97,8 @@ ON-STDERR is called as (fn transport chunk)."
              (when transport
                (when on-stderr
                  (funcall on-stderr transport chunk))))))
+         (node-bin-dir (vortel-lsp-transport--find-node-bin
+                        (or cwd default-directory)))
          (process-environment
           (let ((merged (copy-sequence process-environment)))
             (dolist (pair (vortel-lsp-transport--normalize-env environment))
@@ -110,9 +112,14 @@ ON-STDERR is called as (fn transport chunk)."
                              (lambda (item)
                                (string-prefix-p prefix item))
                              merged)))))
-            (vortel-lsp-transport--maybe-prepend-node-bin
-             merged
-             (or cwd default-directory))))
+            (if node-bin-dir
+                (vortel-lsp-transport--maybe-prepend-node-bin
+                 merged
+                 (or cwd default-directory))
+              merged)))
+         (exec-path (if node-bin-dir
+                        (cons node-bin-dir exec-path)
+                      exec-path))
          (default-directory
           (file-name-as-directory (expand-file-name (or cwd default-directory))))
          (process
