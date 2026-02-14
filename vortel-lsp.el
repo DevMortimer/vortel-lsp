@@ -49,6 +49,22 @@ Used for xref and completion requests that must return immediately."
   :type 'number
   :group 'vortel-lsp)
 
+(defcustom vortel-lsp-auto-completion t
+  "When non-nil, trigger completion automatically while typing."
+  :type 'boolean
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-auto-completion-min-chars 1
+  "Minimum symbol prefix length for automatic completion popup."
+  :type 'integer
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-auto-completion-trigger-characters t
+  "When non-nil, popup completion right after server trigger characters.
+This includes characters like `.' when the server advertises them."
+  :type 'boolean
+  :group 'vortel-lsp)
+
 (defcustom vortel-lsp-goto-reference-include-declaration t
   "When non-nil, include declarations in reference queries."
   :type 'boolean
@@ -67,6 +83,7 @@ Used for xref and completion requests that must return immediately."
 (defvar-local vortel-lsp--diagnostics (make-hash-table :test #'equal))
 (defvar-local vortel-lsp--completion-candidates nil)
 (defvar-local vortel-lsp--completion-resolve-cache nil)
+(defvar-local vortel-lsp--auto-completion-active nil)
 
 (defun vortel-lsp--buffer-uri ()
   "Return URI for current buffer file, or nil."
@@ -83,7 +100,7 @@ Used for xref and completion requests that must return immediately."
   "Count TEXT length in ENCODING units used by LSP positions."
   (pcase encoding
     ('utf-8 (string-bytes text))
-    ('utf-16 (/ (string-bytes (encode-coding-string text 'utf-16-le)) 2))
+    ('utf-16 (/ (string-bytes (encode-coding-string text 'utf-16le)) 2))
     (_ (length text))))
 
 (defun vortel-lsp--point-to-lsp-position (point encoding)
@@ -837,10 +854,74 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
                 client
                 uri
                 vortel-lsp--document-version
-                full-text
-                encoded-changes)))))))))
+                 full-text
+                 encoded-changes)))))))))
 
-(defun vortel-lsp--after-change (beg end _pre-change-length)
+(defun vortel-lsp--completion-trigger-characters-for-client (client)
+  "Return completion trigger characters advertised by CLIENT." 
+  (let* ((caps (vortel-lsp-client-capabilities client))
+         (provider (vortel-lsp-hash-get caps "completionProvider"))
+         (trigger-characters (and (hash-table-p provider)
+                                  (vortel-lsp-hash-get provider "triggerCharacters"))))
+    (if (listp trigger-characters)
+        (delq nil
+              (mapcar (lambda (item)
+                        (when (and (stringp item)
+                                   (not (string-empty-p item)))
+                          item))
+                      trigger-characters))
+      nil)))
+
+(defun vortel-lsp--completion-char-trigger-p (char)
+  "Return non-nil when CHAR is an advertised completion trigger character."
+  (let ((token (and char (char-to-string char))))
+    (and token
+         (cl-some (lambda (attachment)
+                    (let ((client (plist-get attachment :client)))
+                      (member token
+                              (vortel-lsp--completion-trigger-characters-for-client
+                               client))))
+                  (vortel-lsp--attachments-for-feature "completion")))))
+
+(defun vortel-lsp--completion-identifier-char-p (char)
+  "Return non-nil when CHAR is part of an identifier word."
+  (and (characterp char)
+       (let ((syntax (char-syntax char)))
+         (or (eq syntax ?w)
+             (eq syntax ?_)))))
+
+(defun vortel-lsp--completion-prefix-length-at-point ()
+  "Return symbol prefix length ending at point."
+  (if-let* ((bounds (bounds-of-thing-at-point 'symbol)))
+      (max 0 (- (point) (car bounds)))
+    0))
+
+(defun vortel-lsp--should-auto-trigger-completion-p (inserted-text)
+  "Return non-nil when INSERTED-TEXT should trigger auto completion." 
+  (when (and vortel-lsp-auto-completion
+             vortel-lsp-enable-capf
+             (eq this-command 'self-insert-command)
+             (stringp inserted-text)
+             (= (length inserted-text) 1)
+             (vortel-lsp--attachments-for-feature "completion"))
+    (let ((char (aref inserted-text 0)))
+      (or (and vortel-lsp-auto-completion-trigger-characters
+               (vortel-lsp--completion-char-trigger-p char))
+          (and (vortel-lsp--completion-identifier-char-p char)
+               (>= (vortel-lsp--completion-prefix-length-at-point)
+                   (max 0 vortel-lsp-auto-completion-min-chars)))))))
+
+(defun vortel-lsp--auto-trigger-completion ()
+  "Invoke completion at point while guarding against recursive triggers." 
+  (when (and (not vortel-lsp--auto-completion-active)
+             (fboundp 'completion-at-point))
+    (let ((vortel-lsp--auto-completion-active t))
+      (condition-case err
+          (completion-at-point)
+        (error
+         (vortel-lsp-log "auto completion failed: %s" err))))))
+
+(defun vortel-lsp--after-change (beg end pre-change-length)
   "Collect incremental changes after edit from BEG to END."
   (when (and vortel-lsp-mode vortel-lsp--attachments)
     (let ((text (buffer-substring-no-properties beg end)))
@@ -853,7 +934,11 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
                vortel-lsp-change-debounce
                nil
                #'vortel-lsp--flush-changes
-               (current-buffer)))))))
+               (current-buffer))))
+      (when (and (= pre-change-length 0)
+                 (> end beg)
+                 (vortel-lsp--should-auto-trigger-completion-p text))
+        (vortel-lsp--auto-trigger-completion)))))
 
 (defun vortel-lsp--after-save ()
   "Send didSave for all opened attachments."
@@ -1475,6 +1560,22 @@ Applies additional text edits when provided by the server."
                   (preview (car (split-string documentation "\n" t))))
         (message "%s" preview)))))
 
+(defun vortel-lsp--completion-trigger-char-at-point (client)
+  "Return completion trigger character before point for CLIENT, or nil."
+  (let ((token (and (char-before) (char-to-string (char-before)))))
+    (when (and token
+               (member token
+                       (vortel-lsp--completion-trigger-characters-for-client client)))
+      token)))
+
+(defun vortel-lsp--completion-request-context (client)
+  "Build completion request context hash-table for CLIENT."
+  (if-let* ((trigger-char (vortel-lsp--completion-trigger-char-at-point client)))
+      (vortel-lsp-make-hash
+       "triggerKind" 2
+       "triggerCharacter" trigger-char)
+    (vortel-lsp-make-hash "triggerKind" 1)))
+
 (defun vortel-lsp--completion-at-point ()
   "CAPF backend for `vortel-lsp-mode'."
   (let ((attachments (vortel-lsp--attachments-for-feature "completion")))
@@ -1490,11 +1591,11 @@ Applies additional text edits when provided by the server."
                  (params
                   (vortel-lsp-make-hash
                    "textDocument" (vortel-lsp-make-hash "uri" (vortel-lsp--buffer-uri))
-                   "position"
-                   (vortel-lsp--point-to-lsp-position
-                    (point)
-                    (vortel-lsp-client-position-encoding client))
-                   "context" (vortel-lsp-make-hash "triggerKind" 1)))
+                    "position"
+                    (vortel-lsp--point-to-lsp-position
+                     (point)
+                     (vortel-lsp-client-position-encoding client))
+                    "context" (vortel-lsp--completion-request-context client)))
                  (response
                   (vortel-lsp--request-sync
                    client
