@@ -326,9 +326,14 @@ FN is called with (client new-state old-state)."
     "completion" (vortel-lsp-make-hash
                   "completionItem"
                   (vortel-lsp-make-hash
-                   "snippetSupport" t
-                   "deprecatedSupport" t))
-    "publishDiagnostics" (vortel-lsp-make-hash "versionSupport" t))
+                    "snippetSupport" t
+                    "deprecatedSupport" t
+                    "documentationFormat" (list "markdown" "plaintext")
+                    "resolveSupport"
+                    (vortel-lsp-make-hash
+                     "properties"
+                     (list "documentation" "detail" "additionalTextEdits"))))
+     "publishDiagnostics" (vortel-lsp-make-hash "versionSupport" t))
    "window" (vortel-lsp-make-hash "workDoneProgress" t)
    "general" (vortel-lsp-make-hash
               "positionEncodings" (list "utf-8" "utf-32" "utf-16"))))
@@ -570,6 +575,14 @@ TEXT is included only when the server asks for it."
    "textDocument/didClose"
    (vortel-lsp-make-hash
     "textDocument" (vortel-lsp-make-hash "uri" uri))))
+
+(defun vortel-lsp-client-completion-resolve-supported-p (client)
+  "Return non-nil when CLIENT supports `completionItem/resolve'."
+  (let* ((caps (vortel-lsp-client-capabilities client))
+         (completion-provider (vortel-lsp-hash-get caps "completionProvider")))
+    (and (hash-table-p completion-provider)
+         (vortel-lsp-truthy-p
+          (vortel-lsp-hash-get completion-provider "resolveProvider")))))
 
 (defun vortel-lsp-client-supports (client feature)
   "Return non-nil when CLIENT supports FEATURE.

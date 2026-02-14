@@ -66,6 +66,7 @@ Used for xref and completion requests that must return immediately."
 (defvar-local vortel-lsp--flymake-report-fn nil)
 (defvar-local vortel-lsp--diagnostics (make-hash-table :test #'equal))
 (defvar-local vortel-lsp--completion-candidates nil)
+(defvar-local vortel-lsp--completion-resolve-cache nil)
 
 (defun vortel-lsp--buffer-uri ()
   "Return URI for current buffer file, or nil."
@@ -891,6 +892,7 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (setq vortel-lsp--attachments nil)
   (setq vortel-lsp--opened-clients nil)
   (setq vortel-lsp--flymake-report-fn nil)
+  (setq vortel-lsp--completion-resolve-cache nil)
   (clrhash vortel-lsp--diagnostics))
 
 (defun vortel-lsp--enable ()
@@ -1106,6 +1108,87 @@ REPORT-FN is retained and reused on incoming diagnostics."
    'vortel-lsp-client client
    'vortel-lsp-label (or (vortel-lsp-hash-get item "label") "")))
 
+(defun vortel-lsp--completion-resolve-item (item client)
+  "Return resolved completion ITEM from CLIENT when supported."
+  (if (or (not (hash-table-p item))
+          (not client))
+      item
+    (unless (hash-table-p vortel-lsp--completion-resolve-cache)
+      (setq vortel-lsp--completion-resolve-cache (make-hash-table :test #'eq)))
+    (let ((cached (gethash item vortel-lsp--completion-resolve-cache :vortel-none)))
+      (if (not (eq cached :vortel-none))
+          cached
+        (let ((resolved item))
+          (when (vortel-lsp-client-completion-resolve-supported-p client)
+            (let ((response (vortel-lsp--request-sync
+                             client
+                             "completionItem/resolve"
+                             item
+                             vortel-lsp-completion-timeout)))
+              (when (and (plist-get response :ok)
+                         (hash-table-p (plist-get response :result)))
+                (setq resolved (plist-get response :result)))))
+          (puthash item resolved vortel-lsp--completion-resolve-cache)
+          resolved)))))
+
+(defun vortel-lsp--completion-markup-to-string (value)
+  "Convert completion documentation VALUE into plain text."
+  (cond
+   ((stringp value) value)
+   ((hash-table-p value)
+    (or (vortel-lsp-hash-get value "value")
+        (format "%s" value)))
+   ((listp value)
+    (string-join
+     (delq nil (mapcar #'vortel-lsp--completion-markup-to-string value))
+     "\n\n"))
+   (t nil)))
+
+(defun vortel-lsp--completion-item-documentation (item)
+  "Return displayable documentation string for completion ITEM."
+  (when (hash-table-p item)
+    (let* ((detail (vortel-lsp-hash-get item "detail"))
+           (doc (vortel-lsp--completion-markup-to-string
+                 (vortel-lsp-hash-get item "documentation")))
+           (detail-text (and (stringp detail) (not (string-empty-p detail)) detail))
+           (doc-text (and (stringp doc) (not (string-empty-p doc)) doc)))
+      (cond
+       ((and detail-text doc-text)
+        (format "%s\n\n%s" detail-text doc-text))
+       (detail-text detail-text)
+       (doc-text doc-text)
+       (t nil)))))
+
+(defconst vortel-lsp--completion-doc-buffer-name "*vortel-lsp-completion-doc*"
+  "Buffer name used to render completion documentation.")
+
+(defun vortel-lsp--completion-docsig (candidate)
+  "Return short documentation signature for completion CANDIDATE."
+  (let* ((item (get-text-property 0 'vortel-lsp-item candidate))
+         (client (get-text-property 0 'vortel-lsp-client candidate))
+         (resolved (vortel-lsp--completion-resolve-item item client))
+         (documentation (vortel-lsp--completion-item-documentation resolved)))
+    (when (and (stringp documentation)
+               (not (string-empty-p documentation)))
+      (car (split-string documentation "\n" t)))))
+
+(defun vortel-lsp--completion-doc-buffer (candidate)
+  "Return a documentation buffer for completion CANDIDATE."
+  (let* ((item (get-text-property 0 'vortel-lsp-item candidate))
+         (client (get-text-property 0 'vortel-lsp-client candidate))
+         (resolved (vortel-lsp--completion-resolve-item item client))
+         (documentation (vortel-lsp--completion-item-documentation resolved)))
+    (when (and (stringp documentation)
+               (not (string-empty-p documentation)))
+      (let ((buffer (get-buffer-create vortel-lsp--completion-doc-buffer-name)))
+        (with-current-buffer buffer
+          (setq buffer-read-only nil)
+          (erase-buffer)
+          (insert documentation)
+          (goto-char (point-min))
+          (setq buffer-read-only t))
+        buffer))))
+
 (defun vortel-lsp--completion-annotation (candidate)
   "Return annotation string for completion CANDIDATE."
   (let* ((item (get-text-property 0 'vortel-lsp-item candidate))
@@ -1128,9 +1211,10 @@ Applies additional text edits when provided by the server."
   (when (and (eq status 'finished)
              (stringp candidate))
     (let* ((item (get-text-property 0 'vortel-lsp-item candidate))
-           (client (get-text-property 0 'vortel-lsp-client candidate))
-           (additional (and (hash-table-p item)
-                            (vortel-lsp-hash-get item "additionalTextEdits"))))
+            (client (get-text-property 0 'vortel-lsp-client candidate))
+            (resolved (vortel-lsp--completion-resolve-item item client))
+            (additional (and (hash-table-p resolved)
+                             (vortel-lsp-hash-get resolved "additionalTextEdits"))))
       (when (and (listp additional) client)
         (condition-case err
             (vortel-lsp--apply-text-edits-in-buffer
@@ -1138,7 +1222,10 @@ Applies additional text edits when provided by the server."
              additional
              (vortel-lsp-client-position-encoding client))
           (error
-           (vortel-lsp-log "completion additionalTextEdits failed: %s" err)))))))
+            (vortel-lsp-log "completion additionalTextEdits failed: %s" err))))
+      (when-let* ((documentation (vortel-lsp--completion-item-documentation resolved))
+                  (preview (car (split-string documentation "\n" t))))
+        (message "%s" preview)))))
 
 (defun vortel-lsp--completion-at-point ()
   "CAPF backend for `vortel-lsp-mode'."
@@ -1148,7 +1235,8 @@ Applies additional text edits when provided by the server."
                          (cons (point) (point))))
              (start (car bounds))
              (end (cdr bounds))
-             (candidates nil))
+              (candidates nil))
+        (setq vortel-lsp--completion-resolve-cache (make-hash-table :test #'eq))
         (dolist (attachment attachments)
           (let* ((client (plist-get attachment :client))
                  (params
@@ -1180,6 +1268,8 @@ Applies additional text edits when provided by the server."
                       '(metadata (category . vortel-lsp))
                     (complete-with-action action vortel-lsp--completion-candidates string pred)))
                 :annotation-function #'vortel-lsp--completion-annotation
+                :company-docsig #'vortel-lsp--completion-docsig
+                :company-doc-buffer #'vortel-lsp--completion-doc-buffer
                 :exit-function #'vortel-lsp--completion-exit
                 :exclusive 'no))))))
 
