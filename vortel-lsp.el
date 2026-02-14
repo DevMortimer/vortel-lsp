@@ -343,52 +343,265 @@ Return non-nil on success."
                  (not (get-buffer-window buffer t)))
         (kill-buffer buffer)))))
 
-(defun vortel-lsp--collect-workspace-edit-text-edits (workspace-edit)
-  "Collect per-path text edits from WORKSPACE-EDIT.
+(defun vortel-lsp--workspace-edit-dangerous-path-p (path)
+  "Return non-nil when PATH points to a dangerous location."
+  (let* ((expanded (expand-file-name path))
+         (normalized (directory-file-name expanded)))
+    (or (not (file-name-absolute-p expanded))
+        (string-empty-p normalized)
+        (equal normalized "/")
+        (and (eq system-type 'windows-nt)
+             (string-match-p "^[A-Za-z]:$" normalized)))))
+
+(defun vortel-lsp--workspace-edit-uri-to-safe-path (uri context)
+  "Convert URI to a safe local path for CONTEXT.
+Return plist with keys:
+- `:ok' non-nil on success
+- `:path' normalized absolute path on success
+- `:reason' human-readable failure reason on failure"
+  (let ((path (vortel-lsp-uri-to-path uri)))
+    (cond
+     ((not path)
+      (list :ok nil :reason (format "unsupported URI in %s: %s" context uri)))
+     ((vortel-lsp--workspace-edit-dangerous-path-p path)
+      (list :ok nil :reason (format "refusing unsafe path in %s: %s" context path)))
+     (t
+      (list :ok t :path (expand-file-name path))))))
+
+(defun vortel-lsp--collect-workspace-edit-operations (workspace-edit)
+  "Collect ordered operations from WORKSPACE-EDIT.
 Return plist with keys:
 - `:ok' non-nil when fully supported
-- `:edits' hash-table path -> list of text edits
+- `:operations' ordered list of operation plists
 - `:reason' failure reason when not supported"
-  (let ((by-path (make-hash-table :test #'equal))
-        (unsupported nil)
-        (unsupported-reason nil))
+  (let ((operations nil)
+        (failure nil))
     (when-let* ((changes (vortel-lsp-hash-get workspace-edit "changes")))
       (maphash
        (lambda (uri edits)
-         (let ((path (vortel-lsp-uri-to-path uri)))
-           (if (not path)
-               (setq unsupported t
-                     unsupported-reason (format "unsupported URI in workspace edit: %s" uri))
-             (puthash path
-                      (append edits (gethash path by-path))
-                      by-path))))
+         (unless failure
+           (let ((resolved (vortel-lsp--workspace-edit-uri-to-safe-path
+                            uri
+                            "workspace edit changes")))
+             (if (not (plist-get resolved :ok))
+                 (setq failure (plist-get resolved :reason))
+               (push (list :kind 'text-edits
+                           :path (plist-get resolved :path)
+                           :edits (if (listp edits) edits '()))
+                     operations)))))
        changes))
     (when-let* ((document-changes (vortel-lsp-hash-get workspace-edit "documentChanges")))
       (dolist (entry document-changes)
-        (let ((kind (vortel-lsp-hash-get entry "kind")))
-          (if kind
-              (setq unsupported t
-                    unsupported-reason
-                    (format "resource operation is not implemented yet: %s" kind))
-            (let* ((text-document (vortel-lsp-hash-get entry "textDocument"))
-                   (uri (and text-document (vortel-lsp-hash-get text-document "uri")))
-                   (path (and uri (vortel-lsp-uri-to-path uri)))
-                   (edits (vortel-lsp-hash-get entry "edits")))
-              (if (not path)
-                  (setq unsupported t
-                        unsupported-reason (format "unsupported URI in documentChanges: %s" uri))
-                (puthash path
-                         (append edits (gethash path by-path))
-                         by-path)))))))
-    (if unsupported
-        (list :ok nil :reason unsupported-reason)
-      (list :ok t :edits by-path))))
+        (unless failure
+          (let ((kind (vortel-lsp-hash-get entry "kind")))
+            (cond
+             ((or (null kind) (string-empty-p (format "%s" kind)))
+              (let* ((text-document (vortel-lsp-hash-get entry "textDocument"))
+                     (uri (and text-document (vortel-lsp-hash-get text-document "uri")))
+                     (edits (vortel-lsp-hash-get entry "edits"))
+                     (resolved (vortel-lsp--workspace-edit-uri-to-safe-path
+                                uri
+                                "workspace edit documentChanges")))
+                (if (not (plist-get resolved :ok))
+                    (setq failure (plist-get resolved :reason))
+                  (push (list :kind 'text-edits
+                              :path (plist-get resolved :path)
+                              :edits (if (listp edits) edits '()))
+                        operations))))
+             ((string= kind "create")
+              (let* ((uri (vortel-lsp-hash-get entry "uri"))
+                     (options (vortel-lsp-hash-get entry "options"))
+                     (resolved (vortel-lsp--workspace-edit-uri-to-safe-path
+                                uri
+                                "workspace edit create")))
+                (if (not (plist-get resolved :ok))
+                    (setq failure (plist-get resolved :reason))
+                  (push (list :kind 'create-file
+                              :path (plist-get resolved :path)
+                              :options options)
+                        operations))))
+             ((string= kind "rename")
+              (let* ((old-uri (vortel-lsp-hash-get entry "oldUri"))
+                     (new-uri (vortel-lsp-hash-get entry "newUri"))
+                     (options (vortel-lsp-hash-get entry "options"))
+                     (old-resolved (vortel-lsp--workspace-edit-uri-to-safe-path
+                                    old-uri
+                                    "workspace edit rename oldUri"))
+                     (new-resolved (vortel-lsp--workspace-edit-uri-to-safe-path
+                                    new-uri
+                                    "workspace edit rename newUri")))
+                (cond
+                 ((not (plist-get old-resolved :ok))
+                  (setq failure (plist-get old-resolved :reason)))
+                 ((not (plist-get new-resolved :ok))
+                  (setq failure (plist-get new-resolved :reason)))
+                 (t
+                  (push (list :kind 'rename-file
+                              :old-path (plist-get old-resolved :path)
+                              :new-path (plist-get new-resolved :path)
+                              :options options)
+                        operations)))))
+             ((string= kind "delete")
+              (let* ((uri (vortel-lsp-hash-get entry "uri"))
+                     (options (vortel-lsp-hash-get entry "options"))
+                     (resolved (vortel-lsp--workspace-edit-uri-to-safe-path
+                                uri
+                                "workspace edit delete")))
+                (if (not (plist-get resolved :ok))
+                    (setq failure (plist-get resolved :reason))
+                  (push (list :kind 'delete-file
+                              :path (plist-get resolved :path)
+                              :options options)
+                        operations))))
+             (t
+              (setq failure (format "unsupported workspace edit operation kind: %s" kind))))))))
+    (if failure
+        (list :ok nil :reason failure)
+      (list :ok t :operations (nreverse operations)))))
+
+(defun vortel-lsp--workspace-edit-track-renamed-buffer (old-path new-path)
+  "Update visited file path from OLD-PATH to NEW-PATH when buffer is live."
+  (when-let* ((buffer (get-file-buffer old-path)))
+    (with-current-buffer buffer
+      (let ((modified (buffer-modified-p)))
+        (set-visited-file-name new-path t nil)
+        (set-buffer-modified-p modified)))))
+
+(defun vortel-lsp--workspace-edit-track-deleted-buffer (path)
+  "Detach PATH from a live visiting buffer after file deletion."
+  (when-let* ((buffer (get-file-buffer path)))
+    (with-current-buffer buffer
+      (let ((modified (buffer-modified-p)))
+        (set-visited-file-name nil t nil)
+        (set-buffer-modified-p modified)))))
+
+(defun vortel-lsp--workspace-edit-create-file (path options)
+  "Apply a workspace create operation for PATH using OPTIONS.
+Return plist with `:ok' and optional `:reason'."
+  (let ((overwrite (vortel-lsp-truthy-p (vortel-lsp-hash-get options "overwrite")))
+        (ignore-if-exists (vortel-lsp-truthy-p
+                           (vortel-lsp-hash-get options "ignoreIfExists"))))
+    (condition-case err
+        (cond
+         ((file-directory-p path)
+          (list :ok nil :reason (format "cannot create file because directory exists: %s" path)))
+         ((file-exists-p path)
+          (cond
+           (overwrite
+            (with-temp-file path)
+            (list :ok t))
+           (ignore-if-exists
+            (list :ok t))
+           (t
+            (list :ok nil :reason (format "file already exists: %s" path)))))
+         ((not (file-directory-p (file-name-directory path)))
+          (list :ok nil :reason (format "parent directory does not exist: %s" path)))
+         (t
+          (with-temp-file path)
+          (list :ok t)))
+      (file-error
+       (list :ok nil :reason (error-message-string err))))))
+
+(defun vortel-lsp--workspace-edit-rename-file (old-path new-path options)
+  "Apply a workspace rename operation from OLD-PATH to NEW-PATH.
+OPTIONS controls overwrite behavior.
+Return plist with `:ok' and optional `:reason'."
+  (let ((overwrite (vortel-lsp-truthy-p (vortel-lsp-hash-get options "overwrite")))
+        (ignore-if-exists (vortel-lsp-truthy-p
+                           (vortel-lsp-hash-get options "ignoreIfExists"))))
+    (condition-case err
+        (cond
+         ((string= (expand-file-name old-path) (expand-file-name new-path))
+          (list :ok t))
+         ((not (file-exists-p old-path))
+          (list :ok nil :reason (format "rename source does not exist: %s" old-path)))
+         ((not (file-directory-p (file-name-directory new-path)))
+          (list :ok nil :reason (format "rename target parent does not exist: %s" new-path)))
+         ((file-exists-p new-path)
+          (cond
+           (overwrite
+            (rename-file old-path new-path t)
+            (vortel-lsp--workspace-edit-track-renamed-buffer old-path new-path)
+            (list :ok t))
+           (ignore-if-exists
+            (list :ok t))
+           (t
+            (list :ok nil :reason (format "rename target already exists: %s" new-path)))))
+         (t
+          (rename-file old-path new-path nil)
+          (vortel-lsp--workspace-edit-track-renamed-buffer old-path new-path)
+          (list :ok t)))
+      (file-error
+       (list :ok nil :reason (error-message-string err))))))
+
+(defun vortel-lsp--workspace-edit-delete-file (path options)
+  "Apply a workspace delete operation for PATH using OPTIONS.
+Return plist with `:ok' and optional `:reason'."
+  (let ((recursive (vortel-lsp-truthy-p (vortel-lsp-hash-get options "recursive")))
+        (ignore-if-not-exists (vortel-lsp-truthy-p
+                               (vortel-lsp-hash-get options "ignoreIfNotExists"))))
+    (condition-case err
+        (cond
+         ((not (file-exists-p path))
+          (if ignore-if-not-exists
+              (list :ok t)
+            (list :ok nil :reason (format "delete target does not exist: %s" path))))
+         ((file-directory-p path)
+          (if recursive
+              (progn
+                (delete-directory path t)
+                (list :ok t))
+            (list :ok nil :reason (format "refusing non-recursive directory delete: %s" path))))
+         (t
+          (delete-file path)
+          (vortel-lsp--workspace-edit-track-deleted-buffer path)
+          (list :ok t)))
+      (file-error
+       (list :ok nil :reason (error-message-string err))))))
+
+(defun vortel-lsp--apply-workspace-edit-operation (operation encoding)
+  "Apply one WORKSPACE-EDIT OPERATION using position ENCODING.
+Return plist with `:ok' and optional `:reason'."
+  (pcase (plist-get operation :kind)
+    ('text-edits
+     (let ((path (plist-get operation :path))
+           (edits (plist-get operation :edits)))
+       (cond
+        ((null edits)
+         (list :ok t))
+        ((not (or (file-exists-p path)
+                  (get-file-buffer path)))
+         (list :ok nil :reason (format "text edit target does not exist: %s" path)))
+        (t
+         (condition-case err
+             (if (vortel-lsp--apply-text-edits-to-path path edits encoding)
+                 (list :ok t)
+               (list :ok nil :reason (format "failed to apply edits to %s" path)))
+           (error
+            (list :ok nil :reason (format "%s" err))))))))
+    ('create-file
+     (vortel-lsp--workspace-edit-create-file
+      (plist-get operation :path)
+      (plist-get operation :options)))
+    ('rename-file
+     (vortel-lsp--workspace-edit-rename-file
+      (plist-get operation :old-path)
+      (plist-get operation :new-path)
+      (plist-get operation :options)))
+    ('delete-file
+     (vortel-lsp--workspace-edit-delete-file
+      (plist-get operation :path)
+      (plist-get operation :options)))
+    (_
+     (list :ok nil
+           :reason (format "unknown workspace edit operation: %s"
+                           (plist-get operation :kind))))))
 
 (defun vortel-lsp--apply-workspace-edit (client workspace-edit)
   "Apply WORKSPACE-EDIT received from CLIENT.
 Return ApplyWorkspaceEditResponse payload hash-table."
   (condition-case err
-      (let* ((collected (vortel-lsp--collect-workspace-edit-text-edits workspace-edit))
+      (let* ((collected (vortel-lsp--collect-workspace-edit-operations workspace-edit))
              (encoding (vortel-lsp-client-position-encoding client)))
         (if (not (plist-get collected :ok))
             (vortel-lsp-make-hash
@@ -396,14 +609,14 @@ Return ApplyWorkspaceEditResponse payload hash-table."
              "failureReason" (or (plist-get collected :reason)
                                   "workspace edit contains unsupported operations"))
           (let ((ok t)
-                (failure nil)
-                (edits (plist-get collected :edits)))
-            (maphash
-             (lambda (path path-edits)
-               (unless (vortel-lsp--apply-text-edits-to-path path path-edits encoding)
-                 (setq ok nil
-                       failure (format "failed to apply edits to %s" path))))
-             edits)
+                (failure nil))
+            (dolist (operation (plist-get collected :operations))
+              (when ok
+                (let ((result (vortel-lsp--apply-workspace-edit-operation operation encoding)))
+                  (unless (plist-get result :ok)
+                    (setq ok nil
+                          failure (or (plist-get result :reason)
+                                      "workspace edit operation failed"))))))
             (if ok
                 (vortel-lsp-make-hash "applied" t)
               (vortel-lsp-make-hash
