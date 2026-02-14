@@ -584,6 +584,14 @@ TEXT is included only when the server asks for it."
          (vortel-lsp-truthy-p
           (vortel-lsp-hash-get completion-provider "resolveProvider")))))
 
+(defun vortel-lsp-client-code-action-resolve-supported-p (client)
+  "Return non-nil when CLIENT supports `codeAction/resolve'."
+  (let* ((caps (vortel-lsp-client-capabilities client))
+         (code-action-provider (vortel-lsp-hash-get caps "codeActionProvider")))
+    (and (hash-table-p code-action-provider)
+         (vortel-lsp-truthy-p
+          (vortel-lsp-hash-get code-action-provider "resolveProvider")))))
+
 (defun vortel-lsp-client-supports (client feature)
   "Return non-nil when CLIENT supports FEATURE.
 FEATURE is a Helix-style feature name string, like `hover' or `goto-definition'."

@@ -1071,6 +1071,251 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (interactive)
   (call-interactively #'xref-find-references))
 
+(defun vortel-lsp--lsp-error-message (error)
+  "Return a readable message string from LSP ERROR payload."
+  (cond
+   ((hash-table-p error)
+    (or (vortel-lsp-hash-get error "message")
+        (format "%s" error)))
+   ((stringp error) error)
+   (t (format "%s" error))))
+
+(defun vortel-lsp--workspace-edit-p (value)
+  "Return non-nil when VALUE looks like a WorkspaceEdit hash-table."
+  (let ((missing :vortel-missing))
+    (and (hash-table-p value)
+         (or (not (eq (vortel-lsp-hash-get value "changes" missing) missing))
+             (not (eq (vortel-lsp-hash-get value "documentChanges" missing) missing))))))
+
+(defun vortel-lsp--apply-workspace-edit-result (client workspace-edit)
+  "Apply WORKSPACE-EDIT for CLIENT and return status plist.
+Returned plist always contains `:ok' and may include `:reason'."
+  (let ((response (vortel-lsp--apply-workspace-edit client workspace-edit)))
+    (if (vortel-lsp-truthy-p (vortel-lsp-hash-get response "applied"))
+        (list :ok t)
+      (list :ok nil
+            :reason (or (vortel-lsp-hash-get response "failureReason")
+                        "workspace edit apply failed")))))
+
+(defun vortel-lsp--command-object-p (value)
+  "Return non-nil when VALUE is an LSP Command object."
+  (and (hash-table-p value)
+       (stringp (vortel-lsp-hash-get value "command"))))
+
+(defun vortel-lsp--command-from-code-action (item)
+  "Extract a command object from code action ITEM when present."
+  (cond
+   ((vortel-lsp--command-object-p item) item)
+   ((hash-table-p item)
+    (let ((command (vortel-lsp-hash-get item "command")))
+      (and (vortel-lsp--command-object-p command) command)))
+   (t nil)))
+
+(defun vortel-lsp--execute-command-object (client command)
+  "Execute LSP COMMAND on CLIENT and apply returned workspace edits.
+Return plist with `:ok' and optional `:reason'."
+  (let* ((command-id (vortel-lsp-hash-get command "command"))
+         (arguments (vortel-lsp-hash-get command "arguments"))
+         (params (vortel-lsp-make-hash "command" command-id)))
+    (if (not (and (stringp command-id) (not (string-empty-p command-id))))
+        (list :ok nil :reason "invalid command object from server")
+      (progn
+        (when arguments
+          (puthash "arguments" arguments params))
+        (let ((response (vortel-lsp--request-sync
+                         client
+                         "workspace/executeCommand"
+                         params
+                         vortel-lsp-sync-request-timeout)))
+          (if (not (plist-get response :ok))
+              (list :ok nil
+                    :reason (vortel-lsp--lsp-error-message
+                             (plist-get response :error)))
+            (let ((result (plist-get response :result)))
+              (if (vortel-lsp--workspace-edit-p result)
+                  (vortel-lsp--apply-workspace-edit-result client result)
+                (list :ok t)))))))))
+
+(defun vortel-lsp--code-action-params (client)
+  "Build textDocument/codeAction params for CLIENT at point or active region."
+  (let* ((encoding (vortel-lsp-client-position-encoding client))
+         (range-start (if (use-region-p) (region-beginning) (point)))
+         (range-end (if (use-region-p) (region-end) (point))))
+    (vortel-lsp-make-hash
+     "textDocument" (vortel-lsp-make-hash "uri" (vortel-lsp--buffer-uri))
+     "range"
+     (vortel-lsp-make-hash
+      "start" (vortel-lsp--point-to-lsp-position range-start encoding)
+      "end" (vortel-lsp--point-to-lsp-position range-end encoding))
+     "context" (vortel-lsp-make-hash "diagnostics" '()))))
+
+(defun vortel-lsp--code-actions-from-response (response)
+  "Normalize code action RESPONSE to a list of hash tables."
+  (cond
+   ((null response) nil)
+   ((listp response)
+    (cl-remove-if-not #'hash-table-p response))
+   (t nil)))
+
+(defun vortel-lsp--code-action-title (item)
+  "Return a display title for code action ITEM."
+  (let ((title (vortel-lsp-hash-get item "title"))
+        (command (vortel-lsp-hash-get item "command")))
+    (cond
+     ((and (stringp title) (not (string-empty-p title))) title)
+     ((stringp command) command)
+     ((hash-table-p command)
+      (or (vortel-lsp-hash-get command "title")
+          (vortel-lsp-hash-get command "command")
+          "Code Action"))
+     (t "Code Action"))))
+
+(defun vortel-lsp--collect-code-actions ()
+  "Collect code actions from all attached clients."
+  (let ((attachments (vortel-lsp--attachments-for-feature "code-action"))
+        (actions nil))
+    (dolist (attachment attachments)
+      (let* ((client (plist-get attachment :client))
+             (response (vortel-lsp--request-sync
+                        client
+                        "textDocument/codeAction"
+                        (vortel-lsp--code-action-params client)
+                        vortel-lsp-sync-request-timeout)))
+        (when (plist-get response :ok)
+          (dolist (item (vortel-lsp--code-actions-from-response
+                         (plist-get response :result)))
+            (unless (vortel-lsp-truthy-p (vortel-lsp-hash-get item "disabled"))
+              (push (list :title (vortel-lsp--code-action-title item)
+                          :item item
+                          :client client)
+                    actions))))))
+    (nreverse actions)))
+
+(defun vortel-lsp--read-code-action (actions)
+  "Prompt for one entry in ACTIONS and return the selected record."
+  (let ((choices nil)
+        (lookup (make-hash-table :test #'equal))
+        (index 1))
+    (dolist (action actions)
+      (let* ((title (plist-get action :title))
+             (client-name (vortel-lsp-client-name (plist-get action :client)))
+             (choice (format "%d. %s [%s]" index title client-name)))
+        (push choice choices)
+        (puthash choice action lookup)
+        (setq index (1+ index))))
+    (let ((selected (completing-read "Code action: " (nreverse choices) nil t)))
+      (gethash selected lookup))))
+
+(defun vortel-lsp--resolve-code-action (client item)
+  "Resolve code action ITEM through CLIENT when supported."
+  (if (and (hash-table-p item)
+           (not (vortel-lsp--command-object-p item))
+           (vortel-lsp-client-code-action-resolve-supported-p client))
+      (let ((response (vortel-lsp--request-sync
+                       client
+                       "codeAction/resolve"
+                       item
+                       vortel-lsp-sync-request-timeout)))
+        (if (and (plist-get response :ok)
+                 (hash-table-p (plist-get response :result)))
+            (plist-get response :result)
+          item))
+    item))
+
+(defun vortel-lsp--execute-code-action-record (action)
+  "Execute ACTION record returned by `vortel-lsp--collect-code-actions'."
+  (let* ((client (plist-get action :client))
+         (item (plist-get action :item))
+         (resolved (vortel-lsp--resolve-code-action client item))
+         (edit (and (hash-table-p resolved)
+                    (vortel-lsp-hash-get resolved "edit")))
+         (command (vortel-lsp--command-from-code-action resolved))
+         (disabled (and (hash-table-p resolved)
+                        (vortel-lsp-hash-get resolved "disabled")))
+         (result (list :ok t)))
+    (when (vortel-lsp-truthy-p disabled)
+      (setq result
+            (list :ok nil
+                  :reason (or (vortel-lsp-hash-get disabled "reason")
+                              "code action is disabled"))))
+    (when (and (plist-get result :ok)
+               (hash-table-p edit))
+      (setq result (vortel-lsp--apply-workspace-edit-result client edit)))
+    (when (and (plist-get result :ok)
+               command)
+      (setq result (vortel-lsp--execute-command-object client command)))
+    (when (and (plist-get result :ok)
+               (not (hash-table-p edit))
+               (not command))
+      (setq result
+            (list :ok nil :reason "code action has no edit or command")))
+    result))
+
+(defun vortel-lsp-code-actions ()
+  "Request code actions at point and execute the selected action."
+  (interactive)
+  (let ((actions (vortel-lsp--collect-code-actions)))
+    (unless actions
+      (user-error "no code actions available"))
+    (let* ((choice (vortel-lsp--read-code-action actions))
+           (title (plist-get choice :title))
+           (result (vortel-lsp--execute-code-action-record choice)))
+      (if (plist-get result :ok)
+          (message "code action applied: %s" title)
+        (user-error "code action failed: %s"
+                    (or (plist-get result :reason)
+                        "unknown error"))))))
+
+(defalias 'vortel-lsp-code-action #'vortel-lsp-code-actions)
+
+(defun vortel-lsp-rename-symbol (new-name)
+  "Rename symbol at point to NEW-NAME via textDocument/rename."
+  (interactive
+   (let ((symbol (thing-at-point 'symbol t)))
+     (list (read-string
+            (if symbol
+                (format "Rename `%s` to: " symbol)
+              "Rename to: ")
+            nil nil symbol))))
+  (when (string-empty-p new-name)
+    (user-error "rename target must not be empty"))
+  (let ((attachments (vortel-lsp--attachments-for-feature "rename-symbol"))
+        (applied nil)
+        (last-error nil))
+    (unless attachments
+      (user-error "no attached language server supports rename"))
+    (dolist (attachment attachments)
+      (unless applied
+        (let* ((client (plist-get attachment :client))
+               (params (vortel-lsp-make-hash
+                        "textDocument" (vortel-lsp-make-hash
+                                        "uri" (vortel-lsp--buffer-uri))
+                        "position"
+                        (vortel-lsp--point-to-lsp-position
+                         (point)
+                         (vortel-lsp-client-position-encoding client))
+                        "newName" new-name))
+               (response (vortel-lsp--request-sync
+                          client
+                          "textDocument/rename"
+                          params
+                          vortel-lsp-sync-request-timeout)))
+          (if (not (plist-get response :ok))
+              (setq last-error
+                    (vortel-lsp--lsp-error-message (plist-get response :error)))
+            (let ((workspace-edit (plist-get response :result)))
+              (if (hash-table-p workspace-edit)
+                  (let ((apply-result
+                         (vortel-lsp--apply-workspace-edit-result client workspace-edit)))
+                    (if (plist-get apply-result :ok)
+                        (setq applied t)
+                      (setq last-error (plist-get apply-result :reason))))
+                (setq applied t)))))))
+    (if applied
+        (message "renamed to %s" new-name)
+      (user-error "rename failed: %s"
+                  (or last-error "no server accepted rename")))))
+
 (defconst vortel-lsp--completion-kind-names
   [nil
    "Text" "Method" "Function" "Constructor" "Field" "Variable" "Class"
