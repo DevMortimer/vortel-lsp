@@ -44,10 +44,22 @@
    (t
     (error "Unsupported environment type: %S" environment))))
 
+(defun vortel-lsp-transport--find-node-bin (dir)
+  "Search up from DIR for node_modules/.bin directory.
+Returns the path to node_modules/.bin if found, nil otherwise."
+  (let ((current (expand-file-name dir))
+        found)
+    (while (and current (not (string= current "/")) (not found))
+      (let ((bin-dir (expand-file-name "node_modules/.bin" current)))
+        (if (file-directory-p bin-dir)
+            (setq found bin-dir)
+          (setq current (file-name-directory (directory-file-name current))))))
+    found))
+
 (defun vortel-lsp-transport--maybe-prepend-node-bin (env dir)
-  "Return ENV with node_modules/.bin prepended to PATH if it exists under DIR."
-  (let ((bin-dir (expand-file-name "node_modules/.bin" dir)))
-    (if (file-directory-p bin-dir)
+  "Return ENV with node_modules/.bin prepended to PATH if it exists under DIR or parent dirs."
+  (let ((bin-dir (vortel-lsp-transport--find-node-bin dir)))
+    (if bin-dir
         (let* ((path-entry (cl-find-if
                             (lambda (e) (string-prefix-p "PATH=" e))
                             env))

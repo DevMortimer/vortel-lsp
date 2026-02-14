@@ -44,6 +44,21 @@
         (should (equal (car result) (concat "PATH=" bin-dir)))
         (should (member "HOME=/home/user" result))))))
 
+(ert-deftest vortel-lsp-test-transport-finds-node-bin-in-parent ()
+  "PATH is prepended with node_modules/.bin found in parent directory."
+  (vortel-lsp-test-with-temp-dir dir
+    (let* ((bin-dir (expand-file-name "node_modules/.bin" dir))
+           (subdir (expand-file-name "src" dir))
+           (env (list "PATH=/usr/bin:/bin" "HOME=/home/user")))
+      (make-directory bin-dir t)
+      (make-directory subdir t)
+      (let ((result (vortel-lsp-transport--maybe-prepend-node-bin env subdir)))
+        (should (string-prefix-p (concat "PATH=" bin-dir ":")
+                                 (car result)))
+        (should (string-match-p "/usr/bin:/bin" (car result)))
+        ;; HOME unchanged
+        (should (member "HOME=/home/user" result))))))
+
 (provide 'vortel-lsp-transport-tests)
 
 ;;; vortel-lsp-transport-tests.el ends here
