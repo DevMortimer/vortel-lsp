@@ -35,7 +35,7 @@ Return nil when the header does not include a valid Content-Length line."
   "Serialize MESSAGE as a framed JSON-RPC payload.
 The returned string is unibyte data ready for `process-send-string'."
   (let* ((json-false vortel-lsp--json-false)
-         (json-text (json-serialize message))
+         (json-text (json-encode message))
          (json-bytes (encode-coding-string json-text 'utf-8))
          (header (format "Content-Length: %d\r\n\r\n" (string-bytes json-bytes))))
     (concat (encode-coding-string header 'us-ascii) json-bytes)))

@@ -110,11 +110,11 @@ ON-STDERR is called as (fn transport chunk)."
      (lambda (_proc chunk)
        (condition-case err
            (let ((messages (vortel-lsp-jsonrpc-parser-feed parser chunk)))
-             (dolist (message messages)
-               (when vortel-lsp-log-io
-                 (vortel-lsp-log "%s <- %s" process-name (json-serialize message)))
-               (when on-message
-                 (funcall on-message transport message))))
+              (dolist (message messages)
+                (when vortel-lsp-log-io
+                  (vortel-lsp-log "%s <- %s" process-name (json-encode message)))
+                (when on-message
+                  (funcall on-message transport message))))
          (error
           (when on-stderr
             (funcall on-stderr transport
@@ -136,7 +136,7 @@ Return non-nil when the payload was sent."
           (vortel-lsp-log "%s -> %s"
                           (process-name process)
                           (if (hash-table-p payload)
-                              (json-serialize payload)
+                              (json-encode payload)
                             (format "%S" payload))))
         (process-send-string process framed)
         t))))
