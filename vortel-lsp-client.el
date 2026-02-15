@@ -361,15 +361,15 @@ FN is called with (client new-state old-state)."
    client
    "initialize"
    (vortel-lsp-client--initialize-params client)
-   :on-success
-   (lambda (result)
-     (setf (vortel-lsp-client-capabilities client)
-           (vortel-lsp-hash-get result "capabilities")
-           (vortel-lsp-client-server-info client)
-           (vortel-lsp-hash-get result "serverInfo"))
-     (vortel-lsp-client--set-state client 'ready)
-     (vortel-lsp-client-notify client "initialized" (vortel-lsp-make-hash))
-     (vortel-lsp-client--flush-queue client))
+    :on-success
+    (lambda (result)
+      (setf (vortel-lsp-client-capabilities client)
+            (vortel-lsp-hash-get result "capabilities")
+            (vortel-lsp-client-server-info client)
+            (vortel-lsp-hash-get result "serverInfo"))
+      (vortel-lsp-client-notify client "initialized" (vortel-lsp-make-hash))
+      (vortel-lsp-client--set-state client 'ready)
+      (vortel-lsp-client--flush-queue client))
    :on-error
    (lambda (error)
      (vortel-lsp-log "initialize failed (%s): %s"

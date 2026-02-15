@@ -16,6 +16,7 @@
 (require 'vortel-lsp-transport-tests)
 (require 'vortel-lsp-config-tests)
 (require 'vortel-lsp-registry-tests)
+(require 'vortel-lsp-client-tests)
 
 ;;; --- hash-get-section ---
 
