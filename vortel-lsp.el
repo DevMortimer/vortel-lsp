@@ -690,7 +690,12 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
                        "name" (file-name-nondirectory (directory-file-name root)))))))
     ("workspace/configuration"
      (let* ((items (or (vortel-lsp-hash-get params "items") '()))
-            (result (mapcar (lambda (_item) nil) items)))
+            (settings (vortel-lsp-client-settings client))
+            (result (mapcar
+                     (lambda (item)
+                       (let ((section (vortel-lsp-hash-get item "section")))
+                         (vortel-lsp-hash-get-section settings section)))
+                     items)))
        (funcall reply result)))
     ("window/workDoneProgress/create"
      (funcall reply nil))
