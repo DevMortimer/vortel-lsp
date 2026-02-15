@@ -179,6 +179,58 @@
         (vortel-lsp--after-change 1 2 0)
         (should auto-complete-called)))))
 
+(ert-deftest vortel-lsp-test-after-change-no-auto-complete-in-string-by-default ()
+  (with-temp-buffer
+    (let* ((client
+            (vortel-lsp-test-make-client
+             :capabilities
+             (vortel-lsp-make-hash
+              "completionProvider"
+              (vortel-lsp-make-hash "triggerCharacters" (list ".")))))
+           (vortel-lsp-mode t)
+           (vortel-lsp-enable-capf t)
+           (vortel-lsp-auto-completion t)
+           (vortel-lsp-auto-completion-in-strings nil)
+           (vortel-lsp-auto-completion-min-chars 1)
+           (vortel-lsp-auto-completion-trigger-characters t)
+           (vortel-lsp--attachments (list (list :client client
+                                              :server-entry (vortel-lsp-make-hash))))
+           (vortel-lsp--pending-changes nil)
+           (vortel-lsp--before-change-ranges nil)
+           (vortel-lsp--change-timer nil)
+           (this-command 'self-insert-command)
+           (auto-complete-called nil))
+      (insert "\"x\"")
+      (goto-char 3)
+      (insert "i")
+      (cl-letf (((symbol-function 'run-at-time)
+                 (lambda (&rest _args) 'timer))
+                ((symbol-function 'completion-at-point)
+                 (lambda ()
+                   (setq auto-complete-called t))))
+        (vortel-lsp--after-change 3 4 0)
+        (should-not auto-complete-called)))))
+
+(ert-deftest vortel-lsp-test-auto-trigger-company-does-not-retrigger-when-active ()
+  (with-temp-buffer
+    (setq-local company-mode t)
+    (setq-local company-candidates '("AssertionError"))
+    (let ((called nil))
+      (cl-letf (((symbol-function 'company-manual-begin)
+                 (lambda () (setq called t))))
+        (vortel-lsp--auto-trigger-completion)
+        (should-not called)))))
+
+(ert-deftest vortel-lsp-test-auto-trigger-company-begins-when-inactive ()
+  (with-temp-buffer
+    (setq-local company-mode t)
+    (setq-local company-candidates nil)
+    (let ((called nil))
+      (cl-letf (((symbol-function 'company-manual-begin)
+                 (lambda () (setq called t))))
+        (vortel-lsp--auto-trigger-completion)
+        (should called)))))
+
 (ert-deftest vortel-lsp-test-completion-exit-applies-resolved-additional-edits ()
   (with-temp-buffer
     (let* ((client (vortel-lsp-test-make-client))

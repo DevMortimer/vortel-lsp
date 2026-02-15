@@ -24,6 +24,7 @@
 (require 'vortel-lsp-util)
 
 (declare-function company-complete "company")
+(declare-function company-manual-begin "company")
 
 (defcustom vortel-lsp-change-debounce 0.05
   "Seconds to debounce `textDocument/didChange` notifications."
@@ -64,6 +65,11 @@ Used for xref and completion requests that must return immediately."
 (defcustom vortel-lsp-auto-completion-trigger-characters t
   "When non-nil, popup completion right after server trigger characters.
 This includes characters like `.' when the server advertises them."
+  :type 'boolean
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-auto-completion-in-strings nil
+  "When non-nil, allow auto completion while point is in strings or comments."
   :type 'boolean
   :group 'vortel-lsp)
 
@@ -903,10 +909,18 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
       (max 0 (- (point) (car bounds)))
     0))
 
+(defun vortel-lsp--point-in-string-or-comment-p ()
+  "Return non-nil when point is inside a string or comment.
+This uses syntax parsing at point in the current buffer." 
+  (let ((state (syntax-ppss)))
+    (or (nth 3 state) (nth 4 state))))
+
 (defun vortel-lsp--should-auto-trigger-completion-p (inserted-text)
   "Return non-nil when INSERTED-TEXT should trigger auto completion." 
   (when (and vortel-lsp-auto-completion
              vortel-lsp-enable-capf
+             (or vortel-lsp-auto-completion-in-strings
+                 (not (vortel-lsp--point-in-string-or-comment-p)))
              (eq this-command 'self-insert-command)
              (stringp inserted-text)
              (= (length inserted-text) 1)
@@ -923,9 +937,15 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
   (when (not vortel-lsp--auto-completion-active)
     (let ((vortel-lsp--auto-completion-active t))
       (condition-case err
-          (if (bound-and-true-p company-mode)
-              (company-complete)
-            (completion-at-point))
+          (cond
+           ((bound-and-true-p company-mode)
+            (unless (and (boundp 'company-candidates)
+                         company-candidates)
+              (if (fboundp 'company-manual-begin)
+                  (company-manual-begin)
+                (company-complete))))
+           (t
+            (completion-at-point)))
         (error
          (vortel-lsp-log "auto completion failed: %s" err))))))
 
