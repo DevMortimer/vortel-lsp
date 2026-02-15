@@ -1262,7 +1262,7 @@ REPORT-FN is retained and reused on incoming diagnostics."
                         (setq resolved t)
                         (message "%s"
                                  (vortel-lsp--hover-contents-to-string
-                                  contents))))))))))))))
+                                  contents)))))))))))))))
 
 (defun vortel-lsp--auto-hover-setup ()
   "Install idle timer for automatic hover in current buffer."
