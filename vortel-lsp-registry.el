@@ -55,7 +55,8 @@ Return a `vortel-lsp-client' or nil when config is invalid."
          (args (plist-get definition :args))
          (timeout (plist-get definition :timeout))
          (environment (plist-get definition :environment))
-         (initialization-options (plist-get definition :initialization-options)))
+         (initialization-options (plist-get definition :initialization-options))
+         (settings (vortel-lsp-config-server-settings server-name)))
     (if (not (and definition command))
         (progn
           (vortel-lsp-log "missing server definition for %s" server-name)
@@ -69,7 +70,8 @@ Return a `vortel-lsp-client' or nil when config is invalid."
                :root-path root
                :initialization-options initialization-options
                :timeout timeout
-               :environment environment)))
+               :environment environment
+               :settings settings)))
         (vortel-lsp-client-add-state-handler
          client
          #'vortel-lsp-registry--cleanup-on-state-change)
