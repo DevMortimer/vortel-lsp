@@ -40,7 +40,8 @@ Supported plist keys:
 (defcustom vortel-lsp-extra-servers nil
   "Extra servers to attach per language.
 Alist mapping language name strings to lists of server entry plists.
-Each entry plist requires :name and optionally :only/:except for feature filtering.
+Each entry plist requires :name and optionally :only/:except
+for feature filtering.
 
 Example:
   \\='((\"svelte\" . ((:name \"tailwindcss-ls\")))
