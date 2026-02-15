@@ -1048,7 +1048,8 @@ REPORT-FN is retained and reused on incoming diagnostics."
       (cl-return-from vortel-lsp--enable nil))
     (let ((attachments (vortel-lsp-registry-attachments-for-path buffer-file-name)))
     (unless attachments
-      (user-error "no language servers configured for this file"))
+      (setq vortel-lsp-mode nil)
+      (cl-return-from vortel-lsp--enable nil))
     (setq vortel-lsp--attachments attachments)
     (setq vortel-lsp--language (plist-get (car attachments) :language))
     (setq vortel-lsp--opened-clients (make-hash-table :test #'eq))
@@ -1129,7 +1130,8 @@ REPORT-FN is retained and reused on incoming diagnostics."
           (vortel-lsp--enable)
         (error
          (setq vortel-lsp-mode nil)
-         (signal (car err) (cdr err))))
+         (message "[vortel-lsp] failed to start: %s"
+                  (error-message-string err))))
     (vortel-lsp--disable)))
 
 (defun vortel-lsp--text-document-position-params (client)
