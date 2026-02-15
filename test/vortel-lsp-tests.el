@@ -15,6 +15,7 @@
 (require 'vortel-lsp-actions-rename-tests)
 (require 'vortel-lsp-transport-tests)
 (require 'vortel-lsp-config-tests)
+(require 'vortel-lsp-registry-tests)
 
 ;;; --- hash-get-section ---
 
