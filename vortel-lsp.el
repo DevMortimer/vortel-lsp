@@ -100,6 +100,16 @@ Set to `manual' to only show via `vortel-lsp-signature-help'."
   :type 'string
   :group 'vortel-lsp)
 
+(defcustom vortel-lsp-auto-hover t
+  "When non-nil, show hover info in the echo area after idle delay."
+  :type 'boolean
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-auto-hover-delay 1.0
+  "Seconds of idle time before showing hover info at point."
+  :type 'number
+  :group 'vortel-lsp)
+
 (defvar vortel-lsp-mode nil)
 
 (defvar-local vortel-lsp--attachments nil)
@@ -116,6 +126,8 @@ Set to `manual' to only show via `vortel-lsp-signature-help'."
 (defvar-local vortel-lsp--auto-completion-active nil)
 (defvar-local vortel-lsp--signature-timer nil)
 (defvar-local vortel-lsp--signature-active nil)
+(defvar-local vortel-lsp--hover-idle-timer nil)
+(defvar-local vortel-lsp--hover-last-point nil)
 
 (defun vortel-lsp--buffer-uri ()
   "Return URI for current buffer file, or nil."
@@ -1034,6 +1046,7 @@ REPORT-FN is retained and reused on incoming diagnostics."
     (cancel-timer vortel-lsp--signature-timer)
     (setq vortel-lsp--signature-timer nil))
   (setq vortel-lsp--signature-active nil)
+  (vortel-lsp--auto-hover-teardown)
   (clrhash vortel-lsp--diagnostics))
 
 (defun vortel-lsp--enable ()
@@ -1108,7 +1121,9 @@ REPORT-FN is retained and reused on incoming diagnostics."
       (add-hook 'flymake-diagnostic-functions #'vortel-lsp--flymake-backend nil t)
       (flymake-mode 1))
     (when (eq vortel-lsp-signature-help-mode 'auto)
-      (add-hook 'post-command-hook #'vortel-lsp--signature-post-command nil t)))))
+      (add-hook 'post-command-hook #'vortel-lsp--signature-post-command nil t))
+    (when vortel-lsp-auto-hover
+      (vortel-lsp--auto-hover-setup)))))
 
 (defun vortel-lsp--disable ()
   "Disable vortel-lsp in current buffer."
@@ -1119,6 +1134,7 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (remove-hook 'completion-at-point-functions #'vortel-lsp--completion-at-point t)
   (remove-hook 'flymake-diagnostic-functions #'vortel-lsp--flymake-backend t)
   (remove-hook 'post-command-hook #'vortel-lsp--signature-post-command t)
+  (vortel-lsp--auto-hover-teardown)
   (vortel-lsp--cleanup-attachments))
 
 (define-minor-mode vortel-lsp-mode
@@ -1212,6 +1228,60 @@ REPORT-FN is retained and reused on incoming diagnostics."
      "\n\n"))
    (t
     (format "%s" contents))))
+
+(defun vortel-lsp--auto-hover-fire ()
+  "Idle timer callback to show hover info at point."
+  (when (and vortel-lsp-mode
+             vortel-lsp-auto-hover
+             (not (minibufferp))
+             (not (region-active-p))
+             (thing-at-point 'symbol)
+             (not (eq (point) vortel-lsp--hover-last-point))
+             (vortel-lsp--attachments-for-feature "hover"))
+    (setq vortel-lsp--hover-last-point (point))
+    (let ((resolved nil)
+          (buffer (current-buffer))
+          (request-point (point)))
+      (dolist (attachment (vortel-lsp--attachments-for-feature "hover"))
+        (let ((client (plist-get attachment :client)))
+          (vortel-lsp-client-request
+           client
+           "textDocument/hover"
+           (vortel-lsp--text-document-position-params client)
+           :on-success
+           (lambda (result)
+             (unless resolved
+               (vortel-lsp--with-live-buffer
+                buffer
+                (lambda ()
+                  (when (and (eq (point) request-point)
+                             (not (current-message)))
+                    (let ((contents (and result
+                                         (vortel-lsp-hash-get result "contents"))))
+                      (when contents
+                        (setq resolved t)
+                        (message "%s"
+                                 (vortel-lsp--hover-contents-to-string
+                                  contents))))))))))))))
+
+(defun vortel-lsp--auto-hover-setup ()
+  "Install idle timer for automatic hover in current buffer."
+  (when vortel-lsp--hover-idle-timer
+    (cancel-timer vortel-lsp--hover-idle-timer))
+  (setq vortel-lsp--hover-last-point nil)
+  (setq vortel-lsp--hover-idle-timer
+        (run-with-idle-timer vortel-lsp-auto-hover-delay t
+                             (let ((buf (current-buffer)))
+                               (lambda ()
+                                 (vortel-lsp--with-live-buffer
+                                  buf #'vortel-lsp--auto-hover-fire))))))
+
+(defun vortel-lsp--auto-hover-teardown ()
+  "Remove idle timer for automatic hover."
+  (when vortel-lsp--hover-idle-timer
+    (cancel-timer vortel-lsp--hover-idle-timer)
+    (setq vortel-lsp--hover-idle-timer nil))
+  (setq vortel-lsp--hover-last-point nil))
 
 (defun vortel-lsp-find-definition ()
   "Jump to definition using the xref backend integration."
