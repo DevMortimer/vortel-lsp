@@ -57,7 +57,8 @@ Returns the path to node_modules/.bin if found, nil otherwise."
     found))
 
 (defun vortel-lsp-transport--maybe-prepend-node-bin (env dir)
-  "Return ENV with node_modules/.bin prepended to PATH if it exists under DIR or parent dirs."
+  "Return ENV with node_modules/.bin prepended to PATH.
+Searches DIR and parent directories for the bin folder."
   (let ((bin-dir (vortel-lsp-transport--find-node-bin dir)))
     (if bin-dir
         (let* ((path-entry (cl-find-if
