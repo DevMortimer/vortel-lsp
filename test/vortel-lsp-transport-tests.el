@@ -82,6 +82,48 @@
       (make-directory subdir t)
       (should (equal (vortel-lsp-transport--find-node-bin subdir) bin-dir)))))
 
+;;; --- command resolution ---
+
+(ert-deftest vortel-lsp-test-transport-resolve-command-from-project-venv ()
+  "Resolve a command from .venv/bin when not globally available."
+  (vortel-lsp-test-with-temp-dir dir
+    (let* ((venv-bin (expand-file-name ".venv/bin" dir))
+           (script (expand-file-name "ty" venv-bin))
+           (vortel-lsp-local-bin-directories '(".venv/bin")))
+      (make-directory venv-bin t)
+      (with-temp-file script
+        (insert "#!/bin/sh\nexit 0\n"))
+      (set-file-modes script #o755)
+      (cl-letf (((symbol-function 'executable-find) (lambda (_cmd) nil)))
+        (let ((result (vortel-lsp-transport--resolve-command "ty" dir)))
+          (should (equal (plist-get result :command) script))
+          (should (equal (plist-get result :bin-dir)
+                         (file-name-directory script))))))))
+
+(ert-deftest vortel-lsp-test-transport-resolve-command-prefers-global ()
+  "Resolve via executable-find before project-local fallback."
+  (vortel-lsp-test-with-temp-dir dir
+    (let ((global-path "/usr/local/bin/ty")
+          (vortel-lsp-local-bin-directories '(".venv/bin")))
+      (cl-letf (((symbol-function 'executable-find)
+                 (lambda (cmd)
+                   (when (string= cmd "ty") global-path))))
+        (let ((result (vortel-lsp-transport--resolve-command "ty" dir)))
+          (should (equal (plist-get result :command) global-path))
+          (should (equal (plist-get result :bin-dir)
+                         "/usr/local/bin/")))))))
+
+(ert-deftest vortel-lsp-test-transport-command-missing-error-readable ()
+  "Missing command errors include actionable hints."
+  (vortel-lsp-test-with-temp-dir dir
+    (let ((vortel-lsp-local-bin-directories '(".venv/bin")))
+      (cl-letf (((symbol-function 'executable-find) (lambda (_cmd) nil)))
+        (let ((message (vortel-lsp-transport--format-command-missing-error
+                        "ty" "ty" dir)))
+          (should (string-match-p "executable `ty` was not found" message))
+          (should (string-match-p "uv sync" message))
+          (should (string-match-p "direnv allow" message)))))))
+
 (provide 'vortel-lsp-transport-tests)
 
 ;;; vortel-lsp-transport-tests.el ends here
