@@ -62,8 +62,25 @@ Disable a server globally:
 - `M-x vortel-lsp-find-references`
 - `M-x vortel-lsp-rename-symbol`
 - `M-x vortel-lsp-code-actions`
+- `M-x vortel-lsp-signature-help`
 
-### 6) Notes
+### 6) Signature help
+
+`vortel-lsp` displays function signatures in the echo area while you type
+inside argument lists. Trigger characters `(` and `,` activate it
+automatically.
+
+```elisp
+;; Disable auto signature help (use M-x vortel-lsp-signature-help manually)
+(setq vortel-lsp-signature-help-mode 'manual)
+
+;; Adjust doc line limit
+(setq vortel-lsp-signature-help-max-doc-lines 3)
+```
+
+Manual invocation: `M-x vortel-lsp-signature-help`
+
+### 7) Notes
 
 - Keep `vortel-lsp-catalog.json` available (default: repo root).
 - Diagnostics are integrated with Flymake by default.

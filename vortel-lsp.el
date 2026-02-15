@@ -78,6 +78,28 @@ This includes characters like `.' when the server advertises them."
   :type 'boolean
   :group 'vortel-lsp)
 
+(defcustom vortel-lsp-signature-help-mode 'auto
+  "When `auto', show signature help automatically on trigger characters.
+Set to `manual' to only show via `vortel-lsp-signature-help'."
+  :type '(choice (const :tag "Automatic" auto)
+                 (const :tag "Manual" manual))
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-signature-help-max-doc-lines 5
+  "Maximum number of documentation lines to display in signature help."
+  :type 'integer
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-signature-help-debounce 0.08
+  "Seconds to debounce automatic signature help requests."
+  :type 'number
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-signature-help-echo-prefix "sig: "
+  "Prefix prepended to signature help messages in the echo area."
+  :type 'string
+  :group 'vortel-lsp)
+
 (defvar vortel-lsp-mode nil)
 
 (defvar-local vortel-lsp--attachments nil)
@@ -92,6 +114,8 @@ This includes characters like `.' when the server advertises them."
 (defvar-local vortel-lsp--completion-candidates nil)
 (defvar-local vortel-lsp--completion-resolve-cache nil)
 (defvar-local vortel-lsp--auto-completion-active nil)
+(defvar-local vortel-lsp--signature-timer nil)
+(defvar-local vortel-lsp--signature-active nil)
 
 (defun vortel-lsp--buffer-uri ()
   "Return URI for current buffer file, or nil."
@@ -1006,6 +1030,10 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (setq vortel-lsp--opened-clients nil)
   (setq vortel-lsp--flymake-report-fn nil)
   (setq vortel-lsp--completion-resolve-cache nil)
+  (when vortel-lsp--signature-timer
+    (cancel-timer vortel-lsp--signature-timer)
+    (setq vortel-lsp--signature-timer nil))
+  (setq vortel-lsp--signature-active nil)
   (clrhash vortel-lsp--diagnostics))
 
 (defun vortel-lsp--enable ()
@@ -1077,7 +1105,9 @@ REPORT-FN is retained and reused on incoming diagnostics."
       (add-hook 'completion-at-point-functions #'vortel-lsp--completion-at-point nil t))
     (when vortel-lsp-enable-flymake
       (add-hook 'flymake-diagnostic-functions #'vortel-lsp--flymake-backend nil t)
-      (flymake-mode 1)))))
+      (flymake-mode 1))
+    (when (eq vortel-lsp-signature-help-mode 'auto)
+      (add-hook 'post-command-hook #'vortel-lsp--signature-post-command nil t)))))
 
 (defun vortel-lsp--disable ()
   "Disable vortel-lsp in current buffer."
@@ -1087,6 +1117,7 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (remove-hook 'xref-backend-functions #'vortel-lsp--xref-backend t)
   (remove-hook 'completion-at-point-functions #'vortel-lsp--completion-at-point t)
   (remove-hook 'flymake-diagnostic-functions #'vortel-lsp--flymake-backend t)
+  (remove-hook 'post-command-hook #'vortel-lsp--signature-post-command t)
   (vortel-lsp--cleanup-attachments))
 
 (define-minor-mode vortel-lsp-mode
@@ -1656,6 +1687,172 @@ Applies additional text edits when provided by the server."
                 :exit-function #'vortel-lsp--completion-exit
                 :exclusive 'no))))))
 
+
+(defun vortel-lsp--markup-content-to-string (value)
+  "Extract plain text from VALUE which may be a MarkupContent or string."
+  (cond
+   ((stringp value) value)
+   ((hash-table-p value)
+    (or (vortel-lsp-hash-get value "value")
+        (format "%s" value)))
+   (t nil)))
+
+(defun vortel-lsp--signature-help-format (result)
+  "Format SignatureHelp RESULT into a display string or nil."
+  (when (hash-table-p result)
+    (let* ((signatures (vortel-lsp-hash-get result "signatures"))
+           (signatures (if (listp signatures) signatures nil)))
+      (when (and signatures (> (length signatures) 0))
+        (let* ((active-sig-index (or (vortel-lsp-hash-get result "activeSignature") 0))
+               (active-sig-index (if (and (integerp active-sig-index)
+                                          (>= active-sig-index 0)
+                                          (< active-sig-index (length signatures)))
+                                     active-sig-index
+                                   0))
+               (signature (nth active-sig-index signatures))
+               (label (or (vortel-lsp-hash-get signature "label") ""))
+               (parameters (vortel-lsp-hash-get signature "parameters"))
+               (active-param (or (vortel-lsp-hash-get result "activeParameter")
+                                 (vortel-lsp-hash-get signature "activeParameter")))
+               (display-label label)
+               (doc-parts nil))
+          ;; Highlight active parameter in label
+          (when (and (integerp active-param)
+                     (listp parameters)
+                     (>= active-param 0)
+                     (< active-param (length parameters)))
+            (let* ((param (nth active-param parameters))
+                   (param-label (and (hash-table-p param)
+                                     (vortel-lsp-hash-get param "label"))))
+              ;; Highlight based on label type
+              (cond
+               ((and (vectorp param-label)
+                     (= (length param-label) 2))
+                (let ((start (aref param-label 0))
+                      (end (aref param-label 1)))
+                  (when (and (integerp start) (integerp end)
+                             (<= 0 start) (< start end)
+                             (<= end (length label)))
+                    (setq display-label
+                          (concat (substring label 0 start)
+                                  "[" (upcase (substring label start end)) "]"
+                                  (substring label end))))))
+               ((and (listp param-label)
+                     (= (length param-label) 2)
+                     (integerp (car param-label))
+                     (integerp (cadr param-label)))
+                (let ((start (car param-label))
+                      (end (cadr param-label)))
+                  (when (and (<= 0 start) (< start end)
+                             (<= end (length label)))
+                    (setq display-label
+                          (concat (substring label 0 start)
+                                  "[" (upcase (substring label start end)) "]"
+                                  (substring label end))))))
+               ((stringp param-label)
+                (let ((pos (string-search param-label label)))
+                  (when pos
+                    (let ((start pos)
+                          (end (+ pos (length param-label))))
+                      (setq display-label
+                            (concat (substring label 0 start)
+                                    "[" (upcase (substring label start end)) "]"
+                                    (substring label end))))))))
+              ;; Save parameter documentation for later
+              (when (hash-table-p param)
+                (let ((param-doc (vortel-lsp--markup-content-to-string
+                                  (vortel-lsp-hash-get param "documentation"))))
+                  (when (and (stringp param-doc) (not (string-empty-p param-doc)))
+                    (push param-doc doc-parts))))))
+          ;; Collect signature documentation
+          (let ((sig-doc (vortel-lsp--markup-content-to-string
+                          (vortel-lsp-hash-get signature "documentation"))))
+            (when (and (stringp sig-doc) (not (string-empty-p sig-doc)))
+              (push sig-doc doc-parts)))
+          ;; Build final string (doc-parts is in reverse: sig-doc first, param-doc last)
+          (let* ((header (concat vortel-lsp-signature-help-echo-prefix display-label))
+                 (doc-text (when doc-parts
+                             (string-join doc-parts "\n")))
+                 (doc-text (when doc-text
+                             (let ((lines (split-string doc-text "\n")))
+                               (when (> (length lines) vortel-lsp-signature-help-max-doc-lines)
+                                 (setq lines (seq-take lines vortel-lsp-signature-help-max-doc-lines)))
+                               (string-join lines "\n")))))
+            (if doc-text
+                (concat header "\n" doc-text)
+              header)))))))
+
+(defun vortel-lsp--signature-help-display (result)
+  "Display formatted signature help from RESULT."
+  (let ((text (vortel-lsp--signature-help-format result)))
+    (if text
+        (progn
+          (setq vortel-lsp--signature-active text)
+          (message "%s" text))
+      (setq vortel-lsp--signature-active nil))))
+
+(defun vortel-lsp--signature-help-request ()
+  "Send signature help request to the first capable server."
+  (let ((attachments (vortel-lsp--attachments-for-feature "signature-help")))
+    (when attachments
+      (let ((resolved nil)
+            (buffer (current-buffer)))
+        (dolist (attachment attachments)
+          (let ((client (plist-get attachment :client)))
+            (vortel-lsp-client-request
+             client
+             "textDocument/signatureHelp"
+             (vortel-lsp--text-document-position-params client)
+             :on-success
+             (lambda (result)
+               (unless resolved
+                 (setq resolved t)
+                 (vortel-lsp--with-live-buffer
+                  buffer
+                  (lambda ()
+                    (vortel-lsp--signature-help-display result)))))
+             :on-error
+             (lambda (_err) nil))))))))
+
+(defun vortel-lsp-signature-help ()
+  "Request and display signature help at point."
+  (interactive)
+  (let ((attachments (vortel-lsp--attachments-for-feature "signature-help")))
+    (unless attachments
+      (user-error "no attached language server supports signature help"))
+    (vortel-lsp--signature-help-request)))
+
+(defun vortel-lsp--signature-post-command ()
+  "Post-command handler for automatic signature help."
+  (when (and vortel-lsp-mode
+             (eq vortel-lsp-signature-help-mode 'auto)
+             (vortel-lsp--attachments-for-feature "signature-help"))
+    ;; Clear when outside paren context
+    (when (and vortel-lsp--signature-active
+               (= 0 (nth 0 (syntax-ppss))))
+      (setq vortel-lsp--signature-active nil))
+    ;; Trigger on ( , or retrigger while active
+    (let ((should-trigger
+           (or (and (eq this-command 'self-insert-command)
+                    (char-before)
+                    (memq (char-before) '(?\( ?,)))
+               (and vortel-lsp--signature-active
+                    (> (nth 0 (syntax-ppss)) 0)))))
+      (when should-trigger
+        (when vortel-lsp--signature-timer
+          (cancel-timer vortel-lsp--signature-timer)
+          (setq vortel-lsp--signature-timer nil))
+        (let ((buffer (current-buffer)))
+          (setq vortel-lsp--signature-timer
+                (run-at-time
+                 vortel-lsp-signature-help-debounce
+                 nil
+                 (lambda ()
+                   (vortel-lsp--with-live-buffer
+                    buffer
+                    (lambda ()
+                      (setq vortel-lsp--signature-timer nil)
+                      (vortel-lsp--signature-help-request)))))))))))
 
 (provide 'vortel-lsp)
 
