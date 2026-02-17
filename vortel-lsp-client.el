@@ -44,11 +44,173 @@
   send-queue
   capabilities
   dynamic-capabilities
+  watched-file-registrations
   settings
   server-info
   notification-handlers
   request-handlers
   state-handlers)
+
+(defconst vortel-lsp-client--file-change-created 1)
+(defconst vortel-lsp-client--file-change-changed 2)
+(defconst vortel-lsp-client--file-change-deleted 3)
+
+(defconst vortel-lsp-client--watch-kind-create 1)
+(defconst vortel-lsp-client--watch-kind-change 2)
+(defconst vortel-lsp-client--watch-kind-delete 4)
+(defconst vortel-lsp-client--watch-kind-all 7)
+
+(defun vortel-lsp-client--watch-capability-p (method)
+  "Return non-nil when METHOD is watched-files dynamic registration."
+  (string= method "workspace/didChangeWatchedFiles"))
+
+(defun vortel-lsp-client--watcher-base-path (client watcher)
+  "Resolve WATCHER base path for CLIENT.
+Return nil when base URI is unsupported."
+  (let ((glob-pattern (vortel-lsp-hash-get watcher "globPattern")))
+    (cond
+     ((stringp glob-pattern)
+      (vortel-lsp-client-root-path client))
+     ((hash-table-p glob-pattern)
+      (let* ((base-uri-value (vortel-lsp-hash-get glob-pattern "baseUri"))
+             (base-uri
+              (cond
+               ((stringp base-uri-value) base-uri-value)
+               ((hash-table-p base-uri-value)
+                (or (vortel-lsp-hash-get base-uri-value "uri")
+                    (vortel-lsp-hash-get base-uri-value "value")))
+               (t nil)))
+             (base-path (and (stringp base-uri) (vortel-lsp-uri-to-path base-uri))))
+        (when (and base-path (file-directory-p base-path))
+          base-path)))
+     (t nil))))
+
+(defun vortel-lsp-client--watcher-kind-mask (watcher)
+  "Return watcher kind bitmask for WATCHER."
+  (let ((kind (vortel-lsp-hash-get watcher "kind" vortel-lsp-client--watch-kind-all)))
+    (if (and (integerp kind) (> kind 0))
+        kind
+      vortel-lsp-client--watch-kind-all)))
+
+(defun vortel-lsp-client--watch-kind-enabled-p (mask bit)
+  "Return non-nil when MASK includes BIT."
+  (not (zerop (logand mask bit))))
+
+(defun vortel-lsp-client--watch-event-path (value)
+  "Normalize file-notify event VALUE into a path string."
+  (cond
+   ((stringp value) value)
+   ((and (consp value) (stringp (car value))) (car value))
+   (t nil)))
+
+(defun vortel-lsp-client--watch-change (path type)
+  "Build one watched-files PATH change payload with TYPE."
+  (when (and (stringp path) (file-name-absolute-p path))
+    (vortel-lsp-make-hash
+     "uri" (vortel-lsp-path-to-uri path)
+     "type" type)))
+
+(defun vortel-lsp-client--watch-event-changes (event kind-mask)
+  "Convert file EVENT to LSP changes, filtered by KIND-MASK."
+  (let* ((action (nth 1 event))
+         (path-a (vortel-lsp-client--watch-event-path (nth 2 event)))
+         (path-b (vortel-lsp-client--watch-event-path (nth 3 event)))
+         changes)
+    (pcase action
+      ('created
+       (when (vortel-lsp-client--watch-kind-enabled-p kind-mask vortel-lsp-client--watch-kind-create)
+         (when-let* ((change (vortel-lsp-client--watch-change
+                              path-a
+                              vortel-lsp-client--file-change-created)))
+           (push change changes))))
+      ((or 'changed 'attribute-changed)
+       (when (vortel-lsp-client--watch-kind-enabled-p kind-mask vortel-lsp-client--watch-kind-change)
+         (when-let* ((change (vortel-lsp-client--watch-change
+                              path-a
+                              vortel-lsp-client--file-change-changed)))
+           (push change changes))))
+      ('deleted
+       (when (vortel-lsp-client--watch-kind-enabled-p kind-mask vortel-lsp-client--watch-kind-delete)
+         (when-let* ((change (vortel-lsp-client--watch-change
+                              path-a
+                              vortel-lsp-client--file-change-deleted)))
+           (push change changes))))
+      ('renamed
+       (when (vortel-lsp-client--watch-kind-enabled-p kind-mask vortel-lsp-client--watch-kind-delete)
+         (when-let* ((change (vortel-lsp-client--watch-change
+                              path-a
+                              vortel-lsp-client--file-change-deleted)))
+           (push change changes)))
+       (when (vortel-lsp-client--watch-kind-enabled-p kind-mask vortel-lsp-client--watch-kind-create)
+         (when-let* ((change (vortel-lsp-client--watch-change
+                              path-b
+                              vortel-lsp-client--file-change-created)))
+           (push change changes))))
+      (_ nil))
+    (nreverse changes)))
+
+(defun vortel-lsp-client--unregister-file-watch (client registration-id)
+  "Remove and stop watched-files registration REGISTRATION-ID on CLIENT."
+  (let ((watch-table (vortel-lsp-client-watched-file-registrations client)))
+    (when (and (hash-table-p watch-table)
+               (stringp registration-id)
+               (not (string-empty-p registration-id)))
+      (dolist (descriptor (gethash registration-id watch-table))
+        (when (fboundp 'file-notify-rm-watch)
+          (ignore-errors (file-notify-rm-watch descriptor))))
+      (remhash registration-id watch-table)
+      (setf (vortel-lsp-client-watched-file-registrations client) watch-table))))
+
+(defun vortel-lsp-client--clear-file-watch-registrations (client)
+  "Stop all watched-files registrations on CLIENT."
+  (let ((watch-table (vortel-lsp-client-watched-file-registrations client)))
+    (when (hash-table-p watch-table)
+      (let (ids)
+        (maphash (lambda (registration-id _value)
+                   (push registration-id ids))
+                 watch-table)
+        (dolist (registration-id ids)
+          (vortel-lsp-client--unregister-file-watch client registration-id))))))
+
+(defun vortel-lsp-client--register-file-watch (client registration)
+  "Apply one watched-files dynamic REGISTRATION for CLIENT."
+  (let* ((registration-id (vortel-lsp-hash-get registration "id"))
+         (options (vortel-lsp-hash-get registration "registerOptions"))
+         (watchers (if (hash-table-p options)
+                       (or (vortel-lsp-hash-get options "watchers") '())
+                     '()))
+         (watch-table (or (vortel-lsp-client-watched-file-registrations client)
+                          (make-hash-table :test #'equal)))
+         descriptors)
+    (when (and (stringp registration-id)
+               (not (string-empty-p registration-id)))
+      (vortel-lsp-client--unregister-file-watch client registration-id)
+      (when (fboundp 'file-notify-add-watch)
+        (dolist (watcher watchers)
+          (let ((base-path (and (hash-table-p watcher)
+                                (vortel-lsp-client--watcher-base-path client watcher))))
+            (when (and base-path (file-directory-p base-path))
+              (let ((kind-mask (vortel-lsp-client--watcher-kind-mask watcher)))
+                (condition-case err
+                    (push
+                     (file-notify-add-watch
+                      base-path
+                      '(change attribute-change)
+                      (lambda (event)
+                        (let ((changes (vortel-lsp-client--watch-event-changes event kind-mask)))
+                          (when changes
+                            (vortel-lsp-client-notify
+                             client
+                             "workspace/didChangeWatchedFiles"
+                             (vortel-lsp-make-hash "changes" changes))))))
+                     descriptors)
+                  (error
+                   (vortel-lsp-log "failed to register file watch (%s): %s"
+                                   (vortel-lsp-client-name client)
+                                   (error-message-string err)))))))))
+      (when descriptors
+        (puthash registration-id descriptors watch-table)
+        (setf (vortel-lsp-client-watched-file-registrations client) watch-table)))))
 
 (defconst vortel-lsp--feature-method-map
   '(("hover" . ("textDocument/hover"))
@@ -134,7 +296,9 @@ FN is called with (client new-state old-state)."
     (dolist (registration registrations)
       (let ((method (vortel-lsp-hash-get registration "method")))
         (when (and (stringp method) (not (string-empty-p method)))
-          (puthash method t dynamic))))
+          (puthash method (1+ (or (gethash method dynamic) 0)) dynamic)
+          (when (vortel-lsp-client--watch-capability-p method)
+            (vortel-lsp-client--register-file-watch client registration)))))
     (setf (vortel-lsp-client-dynamic-capabilities client) dynamic)))
 
 (defun vortel-lsp-client-unregister-capabilities (client unregistrations)
@@ -144,7 +308,14 @@ FN is called with (client new-state old-state)."
       (dolist (unregistration unregistrations)
         (let ((method (vortel-lsp-hash-get unregistration "method")))
           (when (and (stringp method) (not (string-empty-p method)))
-            (remhash method dynamic))))
+            (let ((remaining (1- (or (gethash method dynamic) 0))))
+              (if (> remaining 0)
+                  (puthash method remaining dynamic)
+                (remhash method dynamic)))
+            (when (vortel-lsp-client--watch-capability-p method)
+              (vortel-lsp-client--unregister-file-watch
+               client
+               (vortel-lsp-hash-get unregistration "id"))))))
       (setf (vortel-lsp-client-dynamic-capabilities client) dynamic))))
 
 (defun vortel-lsp-client--set-state (client new-state)
@@ -297,6 +468,7 @@ FN is called with (client new-state old-state)."
 (defun vortel-lsp-client--transport-exited (client event)
   "Handle CLIENT transport exit EVENT."
   (vortel-lsp-log "server exited (%s): %s" (vortel-lsp-client-name client) event)
+  (vortel-lsp-client--clear-file-watch-registrations client)
   (let (ids)
     (maphash (lambda (k _v) (push k ids)) (vortel-lsp-client-pending client))
     (dolist (id-key ids)
@@ -394,13 +566,14 @@ FN is called with (client new-state old-state)."
            :command command
            :args args
            :root-path root-path
-           :root-uri root-uri
-           :initialization-options initialization-options
-           :timeout (or timeout vortel-lsp-default-request-timeout)
-           :environment environment
-           :settings settings
-           :pending (make-hash-table :test #'equal)
-           :send-queue nil
+            :root-uri root-uri
+            :initialization-options initialization-options
+            :timeout (or timeout vortel-lsp-default-request-timeout)
+            :environment environment
+            :settings settings
+            :pending (make-hash-table :test #'equal)
+            :send-queue nil
+            :watched-file-registrations (make-hash-table :test #'equal)
             :notification-handlers nil
             :request-handlers nil
             :state-handlers nil
@@ -484,6 +657,7 @@ ERROR can be a hash-table payload or a message string."
 
 (defun vortel-lsp-client-force-stop (client)
   "Force stop CLIENT transport."
+  (vortel-lsp-client--clear-file-watch-registrations client)
   (when (vortel-lsp-client-transport client)
     (vortel-lsp-transport-stop (vortel-lsp-client-transport client))))
 

@@ -61,6 +61,122 @@
          (completion-item (vortel-lsp-hash-get completion "completionItem")))
     (should (vortel-lsp-hash-get completion-item "snippetSupport"))))
 
+(ert-deftest vortel-lsp-test-client-initialize-capabilities-advertises-file-watch-registration ()
+  "Workspace file-watch dynamic registration should be advertised."
+  (let* ((caps (vortel-lsp-client--initialize-capabilities))
+         (workspace (vortel-lsp-hash-get caps "workspace"))
+         (file-watch (vortel-lsp-hash-get workspace "didChangeWatchedFiles")))
+    (should (vortel-lsp-hash-get file-watch "dynamicRegistration"))))
+
+(ert-deftest vortel-lsp-test-client-register-capabilities-watched-files-notifies-on-events ()
+  "Watched-files dynamic registrations should emit didChange notifications."
+  (let* ((root default-directory)
+         (client (vortel-lsp-client--create
+                  :id 1
+                  :name "ty"
+                  :command "ty"
+                  :args '()
+                  :root-path root
+                  :root-uri (vortel-lsp-path-to-uri root)
+                  :initialization-options nil
+                  :timeout 1
+                  :environment nil
+                  :transport nil
+                  :state 'ready
+                  :next-request-id 0
+                  :pending (make-hash-table :test #'equal)
+                  :send-queue nil
+                  :capabilities (make-hash-table :test #'equal)
+                  :dynamic-capabilities (make-hash-table :test #'equal)
+                  :watched-file-registrations (make-hash-table :test #'equal)
+                  :server-info nil
+                  :notification-handlers nil
+                  :request-handlers nil
+                  :state-handlers nil))
+         (watch-callback nil)
+         (notifications nil)
+         (changed-path (expand-file-name "foo.py" root))
+         (registration
+          (vortel-lsp-make-hash
+           "id" "watch-1"
+           "method" "workspace/didChangeWatchedFiles"
+           "registerOptions"
+           (vortel-lsp-make-hash
+            "watchers"
+            (list (vortel-lsp-make-hash
+                   "globPattern" "**/*.py"
+                   "kind" 7))))))
+    (cl-letf (((symbol-function 'file-notify-add-watch)
+               (lambda (_path _flags callback)
+                 (setq watch-callback callback)
+                 :watch-1))
+              ((symbol-function 'vortel-lsp-client-notify)
+               (lambda (_client method params)
+                 (push (list method params) notifications))))
+      (vortel-lsp-client-register-capabilities client (list registration))
+      (should watch-callback)
+      (funcall watch-callback (list :watch-1 'changed changed-path)))
+    (let* ((notif (car notifications))
+           (method (car notif))
+           (params (cadr notif))
+           (changes (vortel-lsp-hash-get params "changes"))
+           (first-change (car changes)))
+      (should (string= method "workspace/didChangeWatchedFiles"))
+      (should (= (length changes) 1))
+      (should (= (vortel-lsp-hash-get first-change "type") 2))
+      (should (string= (vortel-lsp-hash-get first-change "uri")
+                       (vortel-lsp-path-to-uri changed-path))))))
+
+(ert-deftest vortel-lsp-test-client-unregister-capabilities-watched-files-removes-watch ()
+  "Unregistering watched-files capabilities should remove watch descriptors."
+  (let* ((root default-directory)
+         (client (vortel-lsp-client--create
+                  :id 1
+                  :name "ty"
+                  :command "ty"
+                  :args '()
+                  :root-path root
+                  :root-uri (vortel-lsp-path-to-uri root)
+                  :initialization-options nil
+                  :timeout 1
+                  :environment nil
+                  :transport nil
+                  :state 'ready
+                  :next-request-id 0
+                  :pending (make-hash-table :test #'equal)
+                  :send-queue nil
+                  :capabilities (make-hash-table :test #'equal)
+                  :dynamic-capabilities (make-hash-table :test #'equal)
+                  :watched-file-registrations (make-hash-table :test #'equal)
+                  :server-info nil
+                  :notification-handlers nil
+                  :request-handlers nil
+                  :state-handlers nil))
+         (removed nil)
+         (registration
+          (vortel-lsp-make-hash
+           "id" "watch-1"
+           "method" "workspace/didChangeWatchedFiles"
+           "registerOptions"
+           (vortel-lsp-make-hash
+            "watchers"
+            (list (vortel-lsp-make-hash
+                   "globPattern" "**/*.py"
+                   "kind" 7)))))
+         (unregistration
+          (vortel-lsp-make-hash
+           "id" "watch-1"
+           "method" "workspace/didChangeWatchedFiles")))
+    (cl-letf (((symbol-function 'file-notify-add-watch)
+               (lambda (_path _flags _callback)
+                 :watch-1))
+              ((symbol-function 'file-notify-rm-watch)
+               (lambda (descriptor)
+                 (setq removed descriptor))))
+      (vortel-lsp-client-register-capabilities client (list registration))
+      (vortel-lsp-client-unregister-capabilities client (list unregistration)))
+    (should (eq removed :watch-1))))
+
 (provide 'vortel-lsp-client-tests)
 
 ;;; vortel-lsp-client-tests.el ends here
