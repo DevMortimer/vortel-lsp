@@ -1671,14 +1671,11 @@ Return plist with `:ok' and optional `:reason'."
 (defun vortel-lsp--completion-item-text (item)
   "Return candidate text for completion ITEM."
   (let* ((label (string-trim (or (vortel-lsp-hash-get item "label") "")))
-          (filter-text (vortel-lsp-hash-get item "filterText"))
           (text-edit (vortel-lsp-hash-get item "textEdit"))
           (new-text (and (hash-table-p text-edit)
                          (vortel-lsp-hash-get text-edit "newText")))
           (insert-text (vortel-lsp-hash-get item "insertText")))
     (cond
-     ((and (stringp filter-text) (not (string-empty-p filter-text)))
-      (string-trim filter-text))
      ((and (stringp new-text) (not (string-empty-p new-text)))
       (string-trim new-text))
      ((and (stringp insert-text) (not (string-empty-p insert-text)))

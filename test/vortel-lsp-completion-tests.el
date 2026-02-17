@@ -11,12 +11,12 @@
 
 (require 'vortel-lsp-test-helpers)
 
-(ert-deftest vortel-lsp-test-completion-item-text-prefers-filter-text ()
+(ert-deftest vortel-lsp-test-completion-item-text-does-not-use-filter-text-as-inserted-text ()
   (let ((item (vortel-lsp-make-hash
                "label" " scanf(const char *restrict, ...)"
                "filterText" "scanf"
                "insertText" "scanf(${1:args})")))
-    (should (equal (vortel-lsp--completion-item-text item) "scanf"))))
+    (should (equal (vortel-lsp--completion-item-text item) "scanf(${1:args})"))))
 
 (ert-deftest vortel-lsp-test-completion-item-text-falls-back-to-trimmed-label ()
   (let ((item (vortel-lsp-make-hash
@@ -83,7 +83,7 @@
       (when (buffer-live-p buffer)
         (kill-buffer buffer)))))
 
-(ert-deftest vortel-lsp-test-completion-at-point-matches-filter-text-prefix ()
+(ert-deftest vortel-lsp-test-completion-at-point-keeps-insert-text-when-filter-text-differs ()
   (with-temp-buffer
     (insert "sca")
     (setq buffer-file-name "/tmp/main.c")
@@ -94,8 +94,8 @@
                                                  (vortel-lsp-make-hash))))
            (item (vortel-lsp-make-hash
                   "label" " scanf(const char *restrict, ...)"
-                  "filterText" "scanf"
-                  "insertText" "scanf(${1:const char *restrict, ...})"))
+                  "filterText" "scanf_alias"
+                  "insertText" "scanf"))
            (vortel-lsp--completion-candidates nil)
            (vortel-lsp--completion-resolve-cache nil))
       (cl-letf (((symbol-function 'vortel-lsp--attachments-for-feature)
@@ -107,10 +107,11 @@
                  (lambda (_client method _params _timeout)
                    (should (string= method "textDocument/completion"))
                    (list :ok t :result (list item)))))
-        (let* ((capf (vortel-lsp--completion-at-point))
-               (collection (nth 2 capf))
-           (hits (all-completions "sca" collection)))
-          (should (member "scanf" hits)))))))
+         (let* ((capf (vortel-lsp--completion-at-point))
+                (collection (nth 2 capf))
+            (hits (all-completions "sca" collection)))
+           (should (member "scanf" hits))
+           (should-not (member "scanf_alias" hits)))))))
 
 (ert-deftest vortel-lsp-test-completion-sort-candidates-prefers-prefix-matches ()
   (let ((vortel-lsp-completion-fuzzy-sort t)
