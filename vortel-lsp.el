@@ -1933,16 +1933,37 @@ Applies additional text edits when provided by the server."
        "triggerCharacter" trigger-char)
     (vortel-lsp-make-hash "triggerKind" 1)))
 
+(defun vortel-lsp--completion-item-main-edit-range (item)
+  "Return the main edit range hash-table for completion ITEM.
+Supports both TextEdit and InsertReplaceEdit forms."
+  (when (hash-table-p item)
+    (let ((text-edit (vortel-lsp-hash-get item "textEdit")))
+      (when (hash-table-p text-edit)
+        (or (vortel-lsp-hash-get text-edit "range")
+            (vortel-lsp-hash-get text-edit "replace"))))))
+
+(defun vortel-lsp--completion-item-buffer-range (item client)
+  "Return buffer range cons (START . END) for ITEM and CLIENT, or nil."
+  (when-let* ((range (vortel-lsp--completion-item-main-edit-range item))
+              (start (vortel-lsp-hash-get range "start"))
+              (end (vortel-lsp-hash-get range "end")))
+    (let* ((encoding (vortel-lsp-client-position-encoding client))
+           (beg (vortel-lsp--lsp-position-to-point start encoding))
+           (fin (vortel-lsp--lsp-position-to-point end encoding)))
+      (when (<= beg fin)
+        (cons beg fin)))))
+
 (defun vortel-lsp--completion-at-point ()
   "CAPF backend for `vortel-lsp-mode'."
   (let ((attachments (vortel-lsp--attachments-for-feature "completion")))
     (when (and attachments
-               (not (vortel-lsp--inside-round-parens-p)))
+                (not (vortel-lsp--inside-round-parens-p)))
       (let* ((bounds (or (bounds-of-thing-at-point 'symbol)
                          (cons (point) (point))))
-             (start (car bounds))
-             (end (cdr bounds))
-              (candidates nil))
+              (start (car bounds))
+              (end (cdr bounds))
+              (completion-range 'unset)
+               (candidates nil))
         (setq vortel-lsp--completion-resolve-cache (make-hash-table :test #'eq))
         (dolist (attachment attachments)
           (let* ((client (plist-get attachment :client))
@@ -1960,29 +1981,43 @@ Applies additional text edits when provided by the server."
                    "textDocument/completion"
                    params
                    vortel-lsp-completion-timeout)))
-            (when (plist-get response :ok)
-              (dolist (item (vortel-lsp--completion-items-from-response
-                             (plist-get response :result)))
-                (when (hash-table-p item)
-                  (push (vortel-lsp--completion-item-candidate item client)
-                        candidates))))))
+             (when (plist-get response :ok)
+               (dolist (item (vortel-lsp--completion-items-from-response
+                              (plist-get response :result)))
+                 (when (hash-table-p item)
+                   (let ((item-range
+                          (vortel-lsp--completion-item-buffer-range item client)))
+                     (cond
+                      ((eq completion-range 'unset)
+                       (setq completion-range (or item-range 'none)))
+                      ((or (eq completion-range 'conflict)
+                           (equal completion-range item-range))
+                       nil)
+                      (t
+                       (setq completion-range 'conflict))))
+                   (push (vortel-lsp--completion-item-candidate item client)
+                         candidates))))))
         (when candidates
-          (setq vortel-lsp--completion-candidates
+          (let* ((use-range (and (consp completion-range)
+                                 completion-range))
+                 (capf-start (if use-range (car use-range) start))
+                 (capf-end (if use-range (cdr use-range) end)))
+            (setq vortel-lsp--completion-candidates
                 (vortel-lsp--completion-sort-candidates
-                 (vortel-lsp--completion-query-at-point start end)
-                 (nreverse candidates)))
-          (list start
-                end
-                (lambda (string pred action)
-                  (if (eq action 'metadata)
-                      '(metadata
-                        (category . vortel-lsp)
-                        (display-sort-function . identity)
-                        (cycle-sort-function . identity))
-                    (complete-with-action action vortel-lsp--completion-candidates string pred)))
-                :annotation-function #'vortel-lsp--completion-annotation
-                :exit-function #'vortel-lsp--completion-exit
-                :exclusive 'no))))))
+                 (vortel-lsp--completion-query-at-point capf-start capf-end)
+                  (nreverse candidates)))
+            (list capf-start
+                  capf-end
+                  (lambda (string pred action)
+                    (if (eq action 'metadata)
+                        '(metadata
+                          (category . vortel-lsp)
+                          (display-sort-function . identity)
+                          (cycle-sort-function . identity))
+                      (complete-with-action action vortel-lsp--completion-candidates string pred)))
+                  :annotation-function #'vortel-lsp--completion-annotation
+                  :exit-function #'vortel-lsp--completion-exit
+                  :exclusive 'no)))))))
 
 
 (defun vortel-lsp--markup-content-to-string (value)
