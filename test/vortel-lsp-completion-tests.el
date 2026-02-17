@@ -143,8 +143,111 @@
                  (lambda (_client method _params _timeout)
                    (should (string= method "textDocument/completion"))
                    (list :ok t :result items))))
-        (vortel-lsp--completion-at-point)
-        (should (equal (car vortel-lsp--completion-candidates) "print"))))))
+         (vortel-lsp--completion-at-point)
+         (should (equal (car vortel-lsp--completion-candidates) "print"))))))
+
+(ert-deftest vortel-lsp-test-completion-at-point-uses-shared-text-edit-range ()
+  (with-temp-buffer
+    (insert "obj.scx")
+    (setq buffer-file-name "/tmp/main.ts")
+    (goto-char (point-max))
+    (let* ((client
+            (vortel-lsp-test-make-client
+             :capabilities (vortel-lsp-make-hash "completionProvider"
+                                                 (vortel-lsp-make-hash))))
+           (item
+            (vortel-lsp-make-hash
+             "label" "scanf"
+             "filterText" "scanf"
+             "textEdit" (vortel-lsp-make-hash
+                         "range" (vortel-lsp-make-hash
+                                  "start" (vortel-lsp-make-hash "line" 0 "character" 3)
+                                  "end" (vortel-lsp-make-hash "line" 0 "character" 7))
+                         "newText" "scanf"))))
+      (cl-letf (((symbol-function 'vortel-lsp--attachments-for-feature)
+                 (lambda (feature)
+                   (if (string= feature "completion")
+                       (list (list :client client))
+                     nil)))
+                ((symbol-function 'vortel-lsp--request-sync)
+                 (lambda (&rest _args)
+                   (list :ok t :result (list item)))))
+        (let ((capf (vortel-lsp--completion-at-point)))
+          (should (equal (cons (nth 0 capf) (nth 1 capf))
+                         (cons 4 8))))))))
+
+(ert-deftest vortel-lsp-test-completion-at-point-falls-back-on-conflicting-ranges ()
+  (with-temp-buffer
+    (insert "obj.scx")
+    (setq buffer-file-name "/tmp/main.ts")
+    (goto-char (point-max))
+    (let* ((client
+            (vortel-lsp-test-make-client
+             :capabilities (vortel-lsp-make-hash "completionProvider"
+                                                 (vortel-lsp-make-hash))))
+           (item-a
+            (vortel-lsp-make-hash
+             "label" "scanf"
+             "filterText" "scanf"
+             "textEdit" (vortel-lsp-make-hash
+                         "range" (vortel-lsp-make-hash
+                                  "start" (vortel-lsp-make-hash "line" 0 "character" 3)
+                                  "end" (vortel-lsp-make-hash "line" 0 "character" 7))
+                         "newText" "scanf")))
+           (item-b
+            (vortel-lsp-make-hash
+             "label" "schema"
+             "filterText" "schema"
+             "textEdit" (vortel-lsp-make-hash
+                         "range" (vortel-lsp-make-hash
+                                  "start" (vortel-lsp-make-hash "line" 0 "character" 4)
+                                  "end" (vortel-lsp-make-hash "line" 0 "character" 7))
+                         "newText" "schema"))))
+      (cl-letf (((symbol-function 'vortel-lsp--attachments-for-feature)
+                 (lambda (feature)
+                   (if (string= feature "completion")
+                       (list (list :client client))
+                     nil)))
+                ((symbol-function 'vortel-lsp--request-sync)
+                 (lambda (&rest _args)
+                   (list :ok t :result (list item-a item-b)))))
+        (let* ((capf (vortel-lsp--completion-at-point))
+               (symbol-bounds (bounds-of-thing-at-point 'symbol)))
+          (should (equal (cons (nth 0 capf) (nth 1 capf))
+                         symbol-bounds)))))))
+
+(ert-deftest vortel-lsp-test-completion-at-point-uses-insert-replace-edit-range ()
+  (with-temp-buffer
+    (insert "obj.scx")
+    (setq buffer-file-name "/tmp/main.ts")
+    (goto-char (point-max))
+    (let* ((client
+            (vortel-lsp-test-make-client
+             :capabilities (vortel-lsp-make-hash "completionProvider"
+                                                 (vortel-lsp-make-hash))))
+           (item
+            (vortel-lsp-make-hash
+             "label" "scanf"
+             "filterText" "scanf"
+             "textEdit" (vortel-lsp-make-hash
+                         "insert" (vortel-lsp-make-hash
+                                   "start" (vortel-lsp-make-hash "line" 0 "character" 4)
+                                   "end" (vortel-lsp-make-hash "line" 0 "character" 7))
+                         "replace" (vortel-lsp-make-hash
+                                    "start" (vortel-lsp-make-hash "line" 0 "character" 3)
+                                    "end" (vortel-lsp-make-hash "line" 0 "character" 7))
+                         "newText" "scanf"))))
+      (cl-letf (((symbol-function 'vortel-lsp--attachments-for-feature)
+                 (lambda (feature)
+                   (if (string= feature "completion")
+                       (list (list :client client))
+                     nil)))
+                ((symbol-function 'vortel-lsp--request-sync)
+                 (lambda (&rest _args)
+                   (list :ok t :result (list item)))))
+        (let ((capf (vortel-lsp--completion-at-point)))
+          (should (equal (cons (nth 0 capf) (nth 1 capf))
+                         (cons 4 8))))))))
 
 (ert-deftest vortel-lsp-test-completion-at-point-suppressed-inside-round-parens ()
   (with-temp-buffer
