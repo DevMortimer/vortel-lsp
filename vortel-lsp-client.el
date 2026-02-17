@@ -390,24 +390,40 @@ FN is called with (client new-state old-state)."
                        method
                        err)))))
 
+(defun vortel-lsp-client--dispatch-reply (client id method replied-cell &optional result error)
+  "Reply to one server request exactly once.
+CLIENT, ID, and METHOD identify the request. REPLIED-CELL tracks whether a
+reply has already been sent. RESULT and ERROR follow JSON-RPC response shape."
+  (if (car replied-cell)
+      (vortel-lsp-log "dropping duplicate reply (%s/%s id=%s)"
+                      (vortel-lsp-client-name client)
+                      method
+                      (vortel-lsp-client--id-key id))
+    (setcar replied-cell t)
+    (if error
+        (vortel-lsp-client-reply-error client id error)
+      (vortel-lsp-client-reply client id result))))
+
 (defun vortel-lsp-client--dispatch-request (client id method params)
   "Dispatch server request METHOD/PARAMS with ID for CLIENT."
-  (let ((handled nil)
-        (reply
-         (lambda (&optional result error)
-           (if error
-               (vortel-lsp-client-reply-error client id error)
-             (vortel-lsp-client-reply client id result)))))
+  (let* ((handled nil)
+         (replied-cell (list nil))
+         (reply (apply-partially #'vortel-lsp-client--dispatch-reply
+                                 client
+                                 id
+                                 method
+                                 replied-cell)))
     (dolist (fn (vortel-lsp-client-request-handlers client))
-      (condition-case err
-          (progn
-            (funcall fn client id method params reply)
-            (setq handled t))
-        (error
-         (vortel-lsp-log "request handler failed (%s/%s): %s"
-                         (vortel-lsp-client-name client)
-                         method
-                         err))))
+      (unless handled
+        (condition-case err
+            (let ((handler-result (funcall fn client id method params reply)))
+              (when (or (car replied-cell) handler-result)
+                (setq handled t)))
+          (error
+           (vortel-lsp-log "request handler failed (%s/%s): %s"
+                           (vortel-lsp-client-name client)
+                           method
+                           err)))))
     (unless handled
       (vortel-lsp-client-reply-error
        client
