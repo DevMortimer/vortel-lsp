@@ -103,8 +103,42 @@
                    (list :ok t :result (list item)))))
         (let* ((capf (vortel-lsp--completion-at-point))
                (collection (nth 2 capf))
-               (hits (all-completions "sca" collection)))
+           (hits (all-completions "sca" collection)))
           (should (member "scanf" hits)))))))
+
+(ert-deftest vortel-lsp-test-completion-sort-candidates-prefers-prefix-matches ()
+  (let ((vortel-lsp-completion-fuzzy-sort t)
+        (candidates '("BaseException" "print" "property" "__repr__")))
+    (should (equal (vortel-lsp--completion-sort-candidates "pr" candidates)
+                   '("print" "property" "__repr__" "BaseException")))))
+
+(ert-deftest vortel-lsp-test-completion-at-point-sorts-noisy-results-by-query ()
+  (with-temp-buffer
+    (insert "pr")
+    (setq buffer-file-name "/tmp/main.py")
+    (goto-char (point-max))
+    (let* ((client
+            (vortel-lsp-test-make-client
+             :capabilities (vortel-lsp-make-hash "completionProvider"
+                                                 (vortel-lsp-make-hash))))
+           (items
+            (list (vortel-lsp-make-hash "label" "BaseException")
+                  (vortel-lsp-make-hash "label" "print")
+                  (vortel-lsp-make-hash "label" "property")))
+           (vortel-lsp-completion-fuzzy-sort t)
+           (vortel-lsp--completion-candidates nil)
+           (vortel-lsp--completion-resolve-cache nil))
+      (cl-letf (((symbol-function 'vortel-lsp--attachments-for-feature)
+                 (lambda (feature)
+                   (if (string= feature "completion")
+                       (list (list :client client))
+                     nil)))
+                ((symbol-function 'vortel-lsp--request-sync)
+                 (lambda (_client method _params _timeout)
+                   (should (string= method "textDocument/completion"))
+                   (list :ok t :result items))))
+        (vortel-lsp--completion-at-point)
+        (should (equal (car vortel-lsp--completion-candidates) "print"))))))
 
 (ert-deftest vortel-lsp-test-completion-request-context-uses-trigger-character ()
   (with-temp-buffer

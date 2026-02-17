@@ -52,6 +52,12 @@ Used for xref and completion requests that must return immediately."
   :type 'number
   :group 'vortel-lsp)
 
+(defcustom vortel-lsp-completion-fuzzy-sort t
+  "When non-nil, sort completion candidates by fuzzy match quality.
+Prefix matches are ranked ahead of non-prefix matches."
+  :type 'boolean
+  :group 'vortel-lsp)
+
 (defcustom vortel-lsp-auto-completion t
   "When non-nil, trigger completion automatically while typing."
   :type 'boolean
@@ -1578,6 +1584,96 @@ Return plist with `:ok' and optional `:reason'."
    'vortel-lsp-client client
    'vortel-lsp-label (or (vortel-lsp-hash-get item "label") "")))
 
+(defun vortel-lsp--completion-query-at-point (start end)
+  "Return completion query text between START and point, bounded by END."
+  (let ((query-end (max start (min (point) end))))
+    (buffer-substring-no-properties start query-end)))
+
+(defun vortel-lsp--completion-subsequence-score (query candidate)
+  "Return subsequence score for QUERY against CANDIDATE, or nil.
+Higher is better. Nil means QUERY is not a subsequence of CANDIDATE."
+  (let* ((q (downcase query))
+         (c (downcase candidate))
+         (q-len (length q))
+         (c-len (length c))
+         (q-idx 0)
+         (c-idx 0)
+         (score 0)
+         (last-match -1))
+    (while (< q-idx q-len)
+      (let ((needle (aref q q-idx))
+            (found nil))
+        (while (and (< c-idx c-len) (not found))
+          (if (eq needle (aref c c-idx))
+              (setq found t)
+            (setq c-idx (1+ c-idx))))
+        (unless found
+          (setq q-idx q-len
+                score nil))
+        (when found
+          (setq score (+ score 12))
+          (if (= c-idx (1+ last-match))
+              (setq score (+ score 8))
+            (setq score (- score (min 6 (max 0 (- c-idx last-match 1))))))
+          (when (or (= c-idx 0)
+                    (and (> c-idx 0)
+                         (memq (aref c (1- c-idx)) '(?- ?_ ?. ?/))))
+            (setq score (+ score 6)))
+          (setq last-match c-idx
+                c-idx (1+ c-idx)
+                q-idx (1+ q-idx)))))
+    (when (numberp score)
+      (- score c-len))))
+
+(defun vortel-lsp--completion-fuzzy-score (query candidate)
+  "Return fuzzy match score for QUERY and CANDIDATE, or nil."
+  (let ((flx-score-fn
+         (and (require 'flx nil t)
+              (fboundp 'flx-score)
+              #'flx-score)))
+    (if flx-score-fn
+        (funcall flx-score-fn query candidate)
+      (vortel-lsp--completion-subsequence-score query candidate))))
+
+(defun vortel-lsp--completion-sort-key (query candidate)
+  "Return sortable ranking key for CANDIDATE against QUERY."
+  (let* ((q (downcase (or query "")))
+         (text (or candidate ""))
+         (c (downcase text))
+         (prefix (and (not (string-empty-p q)) (string-prefix-p q c)))
+         (exact (and (not (string-empty-p q)) (string= q c)))
+         (fuzzy (and (not (string-empty-p q))
+                     (vortel-lsp--completion-fuzzy-score q text))))
+    (list (if exact 1 0)
+          (if prefix 1 0)
+          (if (numberp fuzzy) fuzzy -1000000)
+          (- (length text))
+          text)))
+
+(defun vortel-lsp--completion-candidate-better-p (query candidate-a candidate-b)
+  "Return non-nil when CANDIDATE-A should rank ahead of CANDIDATE-B."
+  (let ((key-a (vortel-lsp--completion-sort-key query candidate-a))
+        (key-b (vortel-lsp--completion-sort-key query candidate-b)))
+    (cond
+     ((> (nth 0 key-a) (nth 0 key-b)) t)
+     ((< (nth 0 key-a) (nth 0 key-b)) nil)
+     ((> (nth 1 key-a) (nth 1 key-b)) t)
+     ((< (nth 1 key-a) (nth 1 key-b)) nil)
+     ((> (nth 2 key-a) (nth 2 key-b)) t)
+     ((< (nth 2 key-a) (nth 2 key-b)) nil)
+     ((> (nth 3 key-a) (nth 3 key-b)) t)
+     ((< (nth 3 key-a) (nth 3 key-b)) nil)
+     (t (string-lessp (nth 4 key-a) (nth 4 key-b))))))
+
+(defun vortel-lsp--completion-sort-candidates (query candidates)
+  "Return CANDIDATES sorted by relevance to QUERY."
+  (if (or (not vortel-lsp-completion-fuzzy-sort)
+          (string-empty-p (or query "")))
+      candidates
+    (sort (copy-sequence candidates)
+          (lambda (a b)
+            (vortel-lsp--completion-candidate-better-p query a b)))))
+
 (defun vortel-lsp--completion-resolve-item (item client)
   "Return resolved completion ITEM from CLIENT when supported."
   (if (or (not (hash-table-p item))
@@ -1746,12 +1842,18 @@ Applies additional text edits when provided by the server."
                   (push (vortel-lsp--completion-item-candidate item client)
                         candidates))))))
         (when candidates
-          (setq vortel-lsp--completion-candidates (nreverse candidates))
+          (setq vortel-lsp--completion-candidates
+                (vortel-lsp--completion-sort-candidates
+                 (vortel-lsp--completion-query-at-point start end)
+                 (nreverse candidates)))
           (list start
                 end
                 (lambda (string pred action)
                   (if (eq action 'metadata)
-                      '(metadata (category . vortel-lsp))
+                      '(metadata
+                        (category . vortel-lsp)
+                        (display-sort-function . identity)
+                        (cycle-sort-function . identity))
                     (complete-with-action action vortel-lsp--completion-candidates string pred)))
                 :annotation-function #'vortel-lsp--completion-annotation
                 :company-docsig #'vortel-lsp--completion-docsig
