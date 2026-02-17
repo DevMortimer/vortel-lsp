@@ -1625,15 +1625,19 @@ Higher is better. Nil means QUERY is not a subsequence of CANDIDATE."
     (when (numberp score)
       (- score c-len))))
 
+(defvar vortel-lsp--flx-score-fn 'unset
+  "Cached flx-score function, or nil if unavailable.")
+
 (defun vortel-lsp--completion-fuzzy-score (query candidate)
   "Return fuzzy match score for QUERY and CANDIDATE, or nil."
-  (let ((flx-score-fn
-         (and (require 'flx nil t)
-              (fboundp 'flx-score)
-              #'flx-score)))
-    (if flx-score-fn
-        (funcall flx-score-fn query candidate)
-      (vortel-lsp--completion-subsequence-score query candidate))))
+  (when (eq vortel-lsp--flx-score-fn 'unset)
+    (setq vortel-lsp--flx-score-fn
+          (and (require 'flx nil t)
+               (fboundp 'flx-score)
+               #'flx-score)))
+  (if vortel-lsp--flx-score-fn
+      (funcall vortel-lsp--flx-score-fn query candidate)
+    (vortel-lsp--completion-subsequence-score query candidate)))
 
 (defun vortel-lsp--completion-sort-key (query candidate)
   "Return sortable ranking key for CANDIDATE against QUERY."
@@ -1650,29 +1654,32 @@ Higher is better. Nil means QUERY is not a subsequence of CANDIDATE."
           (- (length text))
           text)))
 
-(defun vortel-lsp--completion-candidate-better-p (query candidate-a candidate-b)
-  "Return non-nil when CANDIDATE-A should rank ahead of CANDIDATE-B."
-  (let ((key-a (vortel-lsp--completion-sort-key query candidate-a))
-        (key-b (vortel-lsp--completion-sort-key query candidate-b)))
-    (cond
-     ((> (nth 0 key-a) (nth 0 key-b)) t)
-     ((< (nth 0 key-a) (nth 0 key-b)) nil)
-     ((> (nth 1 key-a) (nth 1 key-b)) t)
-     ((< (nth 1 key-a) (nth 1 key-b)) nil)
-     ((> (nth 2 key-a) (nth 2 key-b)) t)
-     ((< (nth 2 key-a) (nth 2 key-b)) nil)
-     ((> (nth 3 key-a) (nth 3 key-b)) t)
-     ((< (nth 3 key-a) (nth 3 key-b)) nil)
-     (t (string-lessp (nth 4 key-a) (nth 4 key-b))))))
+(defun vortel-lsp--completion-sort-key-less-p (key-a key-b)
+  "Return non-nil when KEY-A should rank ahead of KEY-B."
+  (cond
+   ((> (nth 0 key-a) (nth 0 key-b)) t)
+   ((< (nth 0 key-a) (nth 0 key-b)) nil)
+   ((> (nth 1 key-a) (nth 1 key-b)) t)
+   ((< (nth 1 key-a) (nth 1 key-b)) nil)
+   ((> (nth 2 key-a) (nth 2 key-b)) t)
+   ((< (nth 2 key-a) (nth 2 key-b)) nil)
+   ((> (nth 3 key-a) (nth 3 key-b)) t)
+   ((< (nth 3 key-a) (nth 3 key-b)) nil)
+   (t (string-lessp (nth 4 key-a) (nth 4 key-b)))))
 
 (defun vortel-lsp--completion-sort-candidates (query candidates)
   "Return CANDIDATES sorted by relevance to QUERY."
   (if (or (not vortel-lsp-completion-fuzzy-sort)
           (string-empty-p (or query "")))
       candidates
-    (sort (copy-sequence candidates)
-          (lambda (a b)
-            (vortel-lsp--completion-candidate-better-p query a b)))))
+    (let ((decorated (mapcar (lambda (c)
+                               (cons (vortel-lsp--completion-sort-key query c) c))
+                             candidates)))
+      (mapcar #'cdr
+              (sort decorated
+                    (lambda (a b)
+                      (vortel-lsp--completion-sort-key-less-p
+                       (car a) (car b))))))))
 
 (defun vortel-lsp--completion-resolve-item (item client)
   "Return resolved completion ITEM from CLIENT when supported."
