@@ -177,6 +177,120 @@
       (vortel-lsp-client-unregister-capabilities client (list unregistration)))
     (should (eq removed :watch-1))))
 
+(ert-deftest vortel-lsp-test-client-dispatch-request-stops-after-first-reply ()
+  "Dispatch should stop once a request handler replies."
+  (let* ((client (vortel-lsp-client--create
+                  :id 1
+                  :name "ty"
+                  :command "ty"
+                  :args '()
+                  :root-path default-directory
+                  :root-uri (vortel-lsp-path-to-uri default-directory)
+                  :initialization-options nil
+                  :timeout 1
+                  :environment nil
+                  :transport nil
+                  :state 'ready
+                  :next-request-id 0
+                  :pending (make-hash-table :test #'equal)
+                  :send-queue nil
+                  :capabilities (make-hash-table :test #'equal)
+                  :dynamic-capabilities (make-hash-table :test #'equal)
+                  :server-info nil
+                  :notification-handlers nil
+                  :request-handlers nil
+                  :state-handlers nil))
+         (first-called 0)
+         (second-called 0)
+         (replies 0)
+         (reply-errors 0)
+         (reply-id nil)
+         (reply-result nil))
+    (setf (vortel-lsp-client-request-handlers client)
+          (list
+           (lambda (_client _id _method _params reply)
+             (setq first-called (1+ first-called))
+             (funcall reply (vortel-lsp-make-hash "ok" t)))
+           (lambda (_client _id _method _params _reply)
+             (setq second-called (1+ second-called))
+             (error "should not run"))))
+    (cl-letf (((symbol-function 'vortel-lsp-client-reply)
+               (lambda (_client id result)
+                 (setq replies (1+ replies))
+                 (setq reply-id id)
+                 (setq reply-result result)))
+              ((symbol-function 'vortel-lsp-client-reply-error)
+               (lambda (_client _id _error)
+                 (setq reply-errors (1+ reply-errors)))))
+      (vortel-lsp-client--dispatch-request
+       client
+       99
+       "workspace/configuration"
+       (vortel-lsp-make-hash)))
+    (should (= first-called 1))
+    (should (= second-called 0))
+    (should (= replies 1))
+    (should (= reply-errors 0))
+    (should (= reply-id 99))
+    (should (vortel-lsp-hash-get reply-result "ok"))))
+
+(ert-deftest vortel-lsp-test-client-dispatch-request-uses-next-handler-when-unhandled ()
+  "Dispatch should continue when a request handler neither handles nor replies."
+  (let* ((client (vortel-lsp-client--create
+                  :id 1
+                  :name "ty"
+                  :command "ty"
+                  :args '()
+                  :root-path default-directory
+                  :root-uri (vortel-lsp-path-to-uri default-directory)
+                  :initialization-options nil
+                  :timeout 1
+                  :environment nil
+                  :transport nil
+                  :state 'ready
+                  :next-request-id 0
+                  :pending (make-hash-table :test #'equal)
+                  :send-queue nil
+                  :capabilities (make-hash-table :test #'equal)
+                  :dynamic-capabilities (make-hash-table :test #'equal)
+                  :server-info nil
+                  :notification-handlers nil
+                  :request-handlers nil
+                  :state-handlers nil))
+         (first-called 0)
+         (second-called 0)
+         (replies 0)
+         (reply-errors 0)
+         (reply-id nil)
+         (reply-result nil))
+    (setf (vortel-lsp-client-request-handlers client)
+          (list
+           (lambda (_client _id _method _params _reply)
+             (setq first-called (1+ first-called))
+             nil)
+           (lambda (_client _id _method _params reply)
+             (setq second-called (1+ second-called))
+             (funcall reply (vortel-lsp-make-hash "ok" t)))))
+    (cl-letf (((symbol-function 'vortel-lsp-client-reply)
+               (lambda (_client id result)
+                 (setq replies (1+ replies))
+                 (setq reply-id id)
+                 (setq reply-result result)))
+              ((symbol-function 'vortel-lsp-client-reply-error)
+               (lambda (_client _id _error)
+                 (setq reply-errors (1+ reply-errors)))))
+      (vortel-lsp-client--dispatch-request
+       client
+       77
+       "workspace/configuration"
+       (vortel-lsp-make-hash)))
+    (should (= first-called 1))
+    (should (= second-called 1))
+    (should (= replies 1))
+    (should (= reply-errors 0))
+    (should (= reply-id 77))
+    (should (vortel-lsp-hash-get reply-result "ok"))))
+
 (provide 'vortel-lsp-client-tests)
 
 ;;; vortel-lsp-client-tests.el ends here
