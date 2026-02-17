@@ -368,6 +368,66 @@
       (should (equal (vortel-lsp-hash-get text-document "uri") uri))
       (should (equal (vortel-lsp-hash-get params "text") text)))))
 
+(ert-deftest vortel-lsp-test-client-sync-kind-enum-mapping-numbered ()
+  "Numeric textDocumentSync values should follow the LSP enum mapping."
+  (let* ((client (vortel-lsp-client--create
+                  :id 1
+                  :name "ty"
+                  :command "ty"
+                  :args '()
+                  :root-path default-directory
+                  :root-uri (vortel-lsp-path-to-uri default-directory)
+                  :initialization-options nil
+                  :timeout 1
+                  :environment nil
+                  :transport nil
+                  :state 'ready
+                  :next-request-id 0
+                  :pending (make-hash-table :test #'equal)
+                  :send-queue nil
+                  :capabilities (make-hash-table :test #'equal)
+                  :dynamic-capabilities (make-hash-table :test #'equal)
+                  :server-info nil
+                  :notification-handlers nil
+                  :request-handlers nil
+                  :state-handlers nil)))
+    (puthash "textDocumentSync" 0 (vortel-lsp-client-capabilities client))
+    (should (eq (vortel-lsp-client--sync-kind client) 'none))
+    (puthash "textDocumentSync" 1 (vortel-lsp-client-capabilities client))
+    (should (eq (vortel-lsp-client--sync-kind client) 'full))
+    (puthash "textDocumentSync" 2 (vortel-lsp-client-capabilities client))
+    (should (eq (vortel-lsp-client--sync-kind client) 'incremental))))
+
+(ert-deftest vortel-lsp-test-client-sync-kind-enum-mapping-change-field ()
+  "textDocumentSync.change should use the same LSP enum mapping."
+  (let* ((sync-cap (vortel-lsp-make-hash "change" 0))
+         (client (vortel-lsp-client--create
+                  :id 1
+                  :name "ty"
+                  :command "ty"
+                  :args '()
+                  :root-path default-directory
+                  :root-uri (vortel-lsp-path-to-uri default-directory)
+                  :initialization-options nil
+                  :timeout 1
+                  :environment nil
+                  :transport nil
+                  :state 'ready
+                  :next-request-id 0
+                  :pending (make-hash-table :test #'equal)
+                  :send-queue nil
+                  :capabilities (vortel-lsp-make-hash "textDocumentSync" sync-cap)
+                  :dynamic-capabilities (make-hash-table :test #'equal)
+                  :server-info nil
+                  :notification-handlers nil
+                  :request-handlers nil
+                  :state-handlers nil)))
+    (should (eq (vortel-lsp-client--sync-kind client) 'none))
+    (puthash "change" 1 sync-cap)
+    (should (eq (vortel-lsp-client--sync-kind client) 'full))
+    (puthash "change" 2 sync-cap)
+    (should (eq (vortel-lsp-client--sync-kind client) 'incremental))))
+
 (provide 'vortel-lsp-client-tests)
 
 ;;; vortel-lsp-client-tests.el ends here

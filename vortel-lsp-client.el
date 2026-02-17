@@ -697,18 +697,18 @@ ERROR can be a hash-table payload or a message string."
          (sync-cap (vortel-lsp-hash-get caps "textDocumentSync")))
     (cond
      ((numberp sync-cap)
-      (pcase sync-cap
-        (1 'none)
-        (2 'full)
-        (3 'incremental)
-        (_ 'incremental)))
+       (pcase sync-cap
+         (0 'none)
+         (1 'full)
+         (2 'incremental)
+         (_ 'incremental)))
      ((hash-table-p sync-cap)
-      (let ((change (vortel-lsp-hash-get sync-cap "change")))
-        (pcase change
-          (1 'none)
-          (2 'full)
-          (3 'incremental)
-          (_ 'incremental))))
+       (let ((change (vortel-lsp-hash-get sync-cap "change")))
+         (pcase change
+           (0 'none)
+           (1 'full)
+           (2 'incremental)
+           (_ 'incremental))))
      (t
       'incremental))))
 
