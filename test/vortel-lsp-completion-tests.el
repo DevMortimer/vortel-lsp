@@ -18,6 +18,20 @@
                "insertText" "scanf(${1:args})")))
     (should (equal (vortel-lsp--completion-item-text item) "scanf(${1:args})"))))
 
+(ert-deftest vortel-lsp-test-snippet-expand-uses-first-tabstop-for-cursor ()
+  (let* ((expanded (vortel-lsp--snippet-expand "printf(${1:args})$0"))
+         (text (plist-get expanded :text))
+         (cursor (plist-get expanded :cursor-offset)))
+    (should (equal text "printf(args)"))
+    (should (= cursor 7))))
+
+(ert-deftest vortel-lsp-test-snippet-expand-uses-choice-default ()
+  (let* ((expanded (vortel-lsp--snippet-expand "${1|debug,info,error|}: ${0}"))
+         (text (plist-get expanded :text))
+         (cursor (plist-get expanded :cursor-offset)))
+    (should (equal text "debug: "))
+    (should (= cursor 0))))
+
 (ert-deftest vortel-lsp-test-completion-item-text-falls-back-to-trimmed-label ()
   (let ((item (vortel-lsp-make-hash
                "label" "  printf(const char *fmt, ...)  ")))
@@ -422,6 +436,26 @@
         (should (eq called-buffer (current-buffer)))
         (should (equal called-edits additional))
         (should (eq called-encoding 'utf-16))))))
+
+(ert-deftest vortel-lsp-test-completion-exit-expands-snippet-insert-text ()
+  (with-temp-buffer
+    (let* ((client (vortel-lsp-test-make-client))
+           (item (vortel-lsp-make-hash
+                  "label" "printf"
+                  "insertTextFormat" 2
+                  "insertText" "printf(${1:args})"))
+           (candidate (propertize "printf(${1:args})"
+                                  'vortel-lsp-item item
+                                  'vortel-lsp-client client)))
+      (insert candidate)
+      (goto-char (point-max))
+      (cl-letf (((symbol-function 'vortel-lsp--completion-resolve-item)
+                 (lambda (_item _client) item))
+                ((symbol-function 'message)
+                 (lambda (_fmt &rest _args) nil)))
+        (vortel-lsp--completion-exit candidate 'finished)
+        (should (equal (buffer-string) "printf(args)"))
+        (should (= (point) 8))))))
 
 (provide 'vortel-lsp-completion-tests)
 

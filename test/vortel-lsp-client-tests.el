@@ -53,13 +53,13 @@
       (funcall on-success (vortel-lsp-make-hash "capabilities" (vortel-lsp-make-hash))))
     (should (equal (nreverse events) '(initialized ready)))))
 
-(ert-deftest vortel-lsp-test-client-initialize-capabilities-does-not-advertise-snippets ()
-  "Completion capabilities should not claim snippet support yet."
+(ert-deftest vortel-lsp-test-client-initialize-capabilities-advertises-snippets ()
+  "Completion capabilities should claim snippet support."
   (let* ((caps (vortel-lsp-client--initialize-capabilities))
          (text-document (vortel-lsp-hash-get caps "textDocument"))
          (completion (vortel-lsp-hash-get text-document "completion"))
          (completion-item (vortel-lsp-hash-get completion "completionItem")))
-    (should-not (vortel-lsp-hash-get completion-item "snippetSupport"))))
+    (should (vortel-lsp-hash-get completion-item "snippetSupport"))))
 
 (provide 'vortel-lsp-client-tests)
 
