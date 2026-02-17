@@ -44,6 +44,7 @@
   send-queue
   capabilities
   dynamic-capabilities
+  settings
   server-info
   notification-handlers
   request-handlers
@@ -360,15 +361,15 @@ FN is called with (client new-state old-state)."
    client
    "initialize"
    (vortel-lsp-client--initialize-params client)
-   :on-success
-   (lambda (result)
-     (setf (vortel-lsp-client-capabilities client)
-           (vortel-lsp-hash-get result "capabilities")
-           (vortel-lsp-client-server-info client)
-           (vortel-lsp-hash-get result "serverInfo"))
-     (vortel-lsp-client--set-state client 'ready)
-     (vortel-lsp-client-notify client "initialized" (vortel-lsp-make-hash))
-     (vortel-lsp-client--flush-queue client))
+    :on-success
+    (lambda (result)
+      (setf (vortel-lsp-client-capabilities client)
+            (vortel-lsp-hash-get result "capabilities")
+            (vortel-lsp-client-server-info client)
+            (vortel-lsp-hash-get result "serverInfo"))
+      (vortel-lsp-client-notify client "initialized" (vortel-lsp-make-hash))
+      (vortel-lsp-client--set-state client 'ready)
+      (vortel-lsp-client--flush-queue client))
    :on-error
    (lambda (error)
      (vortel-lsp-log "initialize failed (%s): %s"
@@ -380,7 +381,7 @@ FN is called with (client new-state old-state)."
      (vortel-lsp-client-force-stop client))))
 
 (cl-defun vortel-lsp-client-start
-    (&key id name command args root-path root-uri initialization-options timeout environment)
+    (&key id name command args root-path root-uri initialization-options timeout environment settings)
   "Start and return a `vortel-lsp-client' instance."
   (unless (and command (stringp command) (not (string-empty-p command)))
     (error "invalid language server command for %s" name))
@@ -397,6 +398,7 @@ FN is called with (client new-state old-state)."
            :initialization-options initialization-options
            :timeout (or timeout vortel-lsp-default-request-timeout)
            :environment environment
+           :settings settings
            :pending (make-hash-table :test #'equal)
            :send-queue nil
             :notification-handlers nil

@@ -90,6 +90,18 @@ Return nil for non-file URIs."
           (substring path 1)
         path))))
 
+(defun vortel-lsp-hash-get-section (table section)
+  "Traverse TABLE by dot-separated SECTION string.
+Return the nested value, or nil when any key is missing.
+When SECTION is nil or empty, return TABLE itself."
+  (if (or (null section) (string-empty-p section))
+      table
+    (let ((keys (split-string section "\\." t))
+          (current table))
+      (while (and keys current (hash-table-p current))
+        (setq current (gethash (pop keys) current)))
+      (if keys nil current))))
+
 (provide 'vortel-lsp-util)
 
 ;;; vortel-lsp-util.el ends here

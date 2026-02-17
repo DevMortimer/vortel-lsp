@@ -24,6 +24,7 @@
 (require 'vortel-lsp-util)
 
 (declare-function company-complete "company")
+(declare-function company-manual-begin "company")
 
 (defcustom vortel-lsp-change-debounce 0.05
   "Seconds to debounce `textDocument/didChange` notifications."
@@ -51,6 +52,12 @@ Used for xref and completion requests that must return immediately."
   :type 'number
   :group 'vortel-lsp)
 
+(defcustom vortel-lsp-completion-fuzzy-sort t
+  "When non-nil, sort completion candidates by fuzzy match quality.
+Prefix matches are ranked ahead of non-prefix matches."
+  :type 'boolean
+  :group 'vortel-lsp)
+
 (defcustom vortel-lsp-auto-completion t
   "When non-nil, trigger completion automatically while typing."
   :type 'boolean
@@ -67,9 +74,62 @@ This includes characters like `.' when the server advertises them."
   :type 'boolean
   :group 'vortel-lsp)
 
+(defcustom vortel-lsp-auto-completion-in-strings nil
+  "When non-nil, allow auto completion while point is in strings or comments."
+  :type 'boolean
+  :group 'vortel-lsp)
+
 (defcustom vortel-lsp-goto-reference-include-declaration t
   "When non-nil, include declarations in reference queries."
   :type 'boolean
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-signature-help-mode 'auto
+  "When `auto', show signature help automatically on trigger characters.
+Set to `manual' to only show via `vortel-lsp-signature-help'."
+  :type '(choice (const :tag "Automatic" auto)
+                 (const :tag "Manual" manual))
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-signature-help-max-doc-lines 5
+  "Maximum number of documentation lines to display in signature help."
+  :type 'integer
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-signature-help-debounce 0.08
+  "Seconds to debounce automatic signature help requests."
+  :type 'number
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-signature-help-echo-prefix "sig: "
+  "Prefix prepended to signature help messages in the echo area."
+  :type 'string
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-auto-hover t
+  "When non-nil, show hover docs in a floating box near point."
+  :type 'boolean
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-auto-hover-delay 0.0
+  "Seconds of idle time before auto hover requests.
+Set to 0 for immediate hover updates on cursor movement."
+  :type 'number
+  :group 'vortel-lsp)
+
+(defface vortel-lsp-signature-active-parameter-face
+  '((t :inherit font-lock-keyword-face :weight semi-bold))
+  "Face used for the active parameter in signature hints."
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-flymake-echo-diagnostics t
+  "When non-nil, show Flymake diagnostics at point in the echo area."
+  :type 'boolean
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-flymake-echo-prefix "diag: "
+  "Prefix prepended to Flymake diagnostics shown in the echo area."
+  :type 'string
   :group 'vortel-lsp)
 
 (defvar vortel-lsp-mode nil)
@@ -86,6 +146,18 @@ This includes characters like `.' when the server advertises them."
 (defvar-local vortel-lsp--completion-candidates nil)
 (defvar-local vortel-lsp--completion-resolve-cache nil)
 (defvar-local vortel-lsp--auto-completion-active nil)
+(defvar-local vortel-lsp--signature-timer nil)
+(defvar-local vortel-lsp--signature-active nil)
+(defvar-local vortel-lsp--signature-last-request-point nil)
+(defvar-local vortel-lsp--doc-frame nil)
+(defvar-local vortel-lsp--doc-buffer nil)
+(defvar-local vortel-lsp--doc-source nil)
+(defvar-local vortel-lsp--doc-point nil)
+(defvar-local vortel-lsp--hover-idle-timer nil)
+(defvar-local vortel-lsp--hover-last-point nil)
+(defvar-local vortel-lsp--hover-request-point nil)
+(defvar-local vortel-lsp--last-diagnostic-message nil)
+(defvar-local vortel-lsp--last-diagnostic-point nil)
 
 (defun vortel-lsp--buffer-uri ()
   "Return URI for current buffer file, or nil."
@@ -690,7 +762,12 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
                        "name" (file-name-nondirectory (directory-file-name root)))))))
     ("workspace/configuration"
      (let* ((items (or (vortel-lsp-hash-get params "items") '()))
-            (result (mapcar (lambda (_item) nil) items)))
+            (settings (vortel-lsp-client-settings client))
+            (result (mapcar
+                     (lambda (item)
+                       (let ((section (vortel-lsp-hash-get item "section")))
+                         (vortel-lsp-hash-get-section settings section)))
+                     items)))
        (funcall reply result)))
     ("window/workDoneProgress/create"
      (funcall reply nil))
@@ -851,11 +928,12 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
                              "text" (plist-get change :text))
                           (vortel-lsp-make-hash "text" full-text))))
                     changes)))
-             (when (gethash client vortel-lsp--opened-clients)
-               (vortel-lsp-client-did-change
-                client
-                uri
-                vortel-lsp--document-version
+             (when (and (hash-table-p vortel-lsp--opened-clients)
+                        (gethash client vortel-lsp--opened-clients))
+                (vortel-lsp-client-did-change
+                 client
+                 uri
+                 vortel-lsp--document-version
                  full-text
                  encoded-changes)))))))))
 
@@ -898,13 +976,34 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
       (max 0 (- (point) (car bounds)))
     0))
 
+(defun vortel-lsp--point-in-string-or-comment-p ()
+  "Return non-nil when point is inside a string or comment.
+This uses syntax parsing at point in the current buffer." 
+  (let ((state (syntax-ppss)))
+    (or (nth 3 state) (nth 4 state))))
+
+(defun vortel-lsp--current-call-open-paren (&optional ppss)
+  "Return innermost open `(' position containing point, or nil."
+  (let ((stack (nth 9 (or ppss (syntax-ppss))))
+        (open-paren nil))
+    (dolist (open-pos stack open-paren)
+      (when (eq (char-after open-pos) ?\()
+        (setq open-paren open-pos)))))
+
+(defun vortel-lsp--inside-round-parens-p (&optional ppss)
+  "Return non-nil when point is inside at least one `(...)` context."
+  (not (null (vortel-lsp--current-call-open-paren ppss))))
+
 (defun vortel-lsp--should-auto-trigger-completion-p (inserted-text)
   "Return non-nil when INSERTED-TEXT should trigger auto completion." 
   (when (and vortel-lsp-auto-completion
-             vortel-lsp-enable-capf
-             (eq this-command 'self-insert-command)
-             (stringp inserted-text)
-             (= (length inserted-text) 1)
+              vortel-lsp-enable-capf
+              (not (vortel-lsp--inside-round-parens-p))
+              (or vortel-lsp-auto-completion-in-strings
+                  (not (vortel-lsp--point-in-string-or-comment-p)))
+              (eq this-command 'self-insert-command)
+              (stringp inserted-text)
+              (= (length inserted-text) 1)
              (vortel-lsp--attachments-for-feature "completion"))
     (let ((char (aref inserted-text 0)))
       (or (and vortel-lsp-auto-completion-trigger-characters
@@ -917,10 +1016,22 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
   "Invoke completion at point while guarding against recursive triggers."
   (when (not vortel-lsp--auto-completion-active)
     (let ((vortel-lsp--auto-completion-active t))
+      ;; Flush pending didChange so the server sees the latest text
+      ;; before we send the completion request.
+      (when vortel-lsp--change-timer
+        (when (timerp vortel-lsp--change-timer)
+          (cancel-timer vortel-lsp--change-timer))
+        (vortel-lsp--flush-changes (current-buffer)))
       (condition-case err
-          (if (bound-and-true-p company-mode)
-              (company-complete)
-            (completion-at-point))
+          (cond
+           ((bound-and-true-p company-mode)
+            (unless (and (boundp 'company-candidates)
+                         company-candidates)
+              (if (fboundp 'company-manual-begin)
+                  (company-manual-begin)
+                (company-complete))))
+           (t
+            (completion-at-point)))
         (error
          (vortel-lsp-log "auto completion failed: %s" err))))))
 
@@ -949,7 +1060,8 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
         (text (buffer-substring-no-properties (point-min) (point-max))))
     (dolist (attachment vortel-lsp--attachments)
       (let ((client (plist-get attachment :client)))
-        (when (gethash client vortel-lsp--opened-clients)
+        (when (and (hash-table-p vortel-lsp--opened-clients)
+                   (gethash client vortel-lsp--opened-clients))
           (vortel-lsp-client-did-save client uri text))))))
 
 (defun vortel-lsp--flymake-backend (report-fn &rest _args)
@@ -981,6 +1093,14 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (setq vortel-lsp--opened-clients nil)
   (setq vortel-lsp--flymake-report-fn nil)
   (setq vortel-lsp--completion-resolve-cache nil)
+  (when vortel-lsp--signature-timer
+    (cancel-timer vortel-lsp--signature-timer)
+    (setq vortel-lsp--signature-timer nil))
+  (vortel-lsp--signature-clear)
+  (setq vortel-lsp--signature-active nil)
+  (setq vortel-lsp--signature-last-request-point nil)
+  (vortel-lsp--signature-destroy-doc)
+  (vortel-lsp--auto-hover-teardown)
   (clrhash vortel-lsp--diagnostics))
 
 (defun vortel-lsp--enable ()
@@ -995,7 +1115,8 @@ REPORT-FN is retained and reused on incoming diagnostics."
       (cl-return-from vortel-lsp--enable nil))
     (let ((attachments (vortel-lsp-registry-attachments-for-path buffer-file-name)))
     (unless attachments
-      (user-error "no language servers configured for this file"))
+      (setq vortel-lsp-mode nil)
+      (cl-return-from vortel-lsp--enable nil))
     (setq vortel-lsp--attachments attachments)
     (setq vortel-lsp--language (plist-get (car attachments) :language))
     (setq vortel-lsp--opened-clients (make-hash-table :test #'eq))
@@ -1052,7 +1173,14 @@ REPORT-FN is retained and reused on incoming diagnostics."
       (add-hook 'completion-at-point-functions #'vortel-lsp--completion-at-point nil t))
     (when vortel-lsp-enable-flymake
       (add-hook 'flymake-diagnostic-functions #'vortel-lsp--flymake-backend nil t)
-      (flymake-mode 1)))))
+      (flymake-mode 1))
+    (when (eq vortel-lsp-signature-help-mode 'auto)
+      (add-hook 'post-command-hook #'vortel-lsp--signature-post-command nil t))
+    (add-hook 'post-command-hook #'vortel-lsp--ui-post-command nil t)
+    (add-hook 'window-scroll-functions #'vortel-lsp--signature-on-scroll nil t)
+    (add-hook 'kill-buffer-hook #'vortel-lsp--signature-on-kill-buffer nil t)
+    (when vortel-lsp-auto-hover
+      (vortel-lsp--auto-hover-setup)))))
 
 (defun vortel-lsp--disable ()
   "Disable vortel-lsp in current buffer."
@@ -1062,6 +1190,13 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (remove-hook 'xref-backend-functions #'vortel-lsp--xref-backend t)
   (remove-hook 'completion-at-point-functions #'vortel-lsp--completion-at-point t)
   (remove-hook 'flymake-diagnostic-functions #'vortel-lsp--flymake-backend t)
+  (remove-hook 'post-command-hook #'vortel-lsp--signature-post-command t)
+  (remove-hook 'post-command-hook #'vortel-lsp--ui-post-command t)
+  (remove-hook 'window-scroll-functions #'vortel-lsp--signature-on-scroll t)
+  (remove-hook 'kill-buffer-hook #'vortel-lsp--signature-on-kill-buffer t)
+  (vortel-lsp--signature-clear)
+  (vortel-lsp--signature-destroy-doc)
+  (vortel-lsp--auto-hover-teardown)
   (vortel-lsp--cleanup-attachments))
 
 (define-minor-mode vortel-lsp-mode
@@ -1073,7 +1208,8 @@ REPORT-FN is retained and reused on incoming diagnostics."
           (vortel-lsp--enable)
         (error
          (setq vortel-lsp-mode nil)
-         (signal (car err) (cdr err))))
+         (message "[vortel-lsp] failed to start: %s"
+                  (error-message-string err))))
     (vortel-lsp--disable)))
 
 (defun vortel-lsp--text-document-position-params (client)
@@ -1133,13 +1269,73 @@ REPORT-FN is retained and reused on incoming diagnostics."
            client
            "textDocument/hover"
            (vortel-lsp--text-document-position-params client)
-           :on-success
-           (lambda (result)
-             (unless resolved
-               (let ((contents (vortel-lsp-hash-get result "contents")))
-                 (when contents
-                   (setq resolved t)
-                   (message "%s" (vortel-lsp--hover-contents-to-string contents))))))))))))
+            :on-success
+            (lambda (result)
+              (unless resolved
+                (let ((contents (vortel-lsp-hash-get result "contents")))
+                  (when contents
+                    (let ((doc (vortel-lsp--hover-contents-to-string contents)))
+                      (when (vortel-lsp--hover-doc-useful-p doc)
+                        (setq resolved t)
+                        (vortel-lsp--doc-show doc 'hover)))))))))))))
+
+(defun vortel-lsp--hover-doc-useful-p (doc)
+  "Return non-nil when hover DOC should be shown to users."
+  (and (stringp doc)
+       (not (string-empty-p doc))
+       (not (string-match-p "\\`[[:space:]]*[Uu]nknown[[:space:]]*\\.?[[:space:]]*\\'" doc))))
+
+(defun vortel-lsp--auto-hover-request-at-point (&optional force)
+  "Request hover docs immediately for current point.
+When FORCE is non-nil, bypass duplicate-point suppression."
+  (when (and vortel-lsp-mode
+             vortel-lsp-auto-hover
+             (not (minibufferp))
+             (not (region-active-p))
+             (thing-at-point 'symbol)
+             (vortel-lsp--attachments-for-feature "hover"))
+    (let ((point-now (point)))
+      (unless (and (not force)
+                   (eq point-now vortel-lsp--hover-request-point)
+                   (eq vortel-lsp--doc-source 'hover))
+        (setq vortel-lsp--hover-request-point point-now)
+        (let ((resolved nil)
+              (buffer (current-buffer)))
+          (dolist (attachment (vortel-lsp--attachments-for-feature "hover"))
+            (let ((client (plist-get attachment :client)))
+              (vortel-lsp-client-request
+               client
+               "textDocument/hover"
+               (vortel-lsp--text-document-position-params client)
+               :on-success
+               (lambda (result)
+                 (unless resolved
+                   (vortel-lsp--with-live-buffer
+                    buffer
+                    (lambda ()
+                      (when (and (eq (point) point-now)
+                                 (not (vortel-lsp--inside-round-parens-p)))
+                        (let ((contents (and result
+                                             (vortel-lsp-hash-get result "contents"))))
+                          (if contents
+                              (let ((doc (vortel-lsp--hover-contents-to-string contents)))
+                                (if (vortel-lsp--hover-doc-useful-p doc)
+                                    (progn
+                                      (setq resolved t)
+                                      (vortel-lsp--doc-show doc 'hover))
+                                  (setq vortel-lsp--hover-request-point nil)
+                                  (when (eq vortel-lsp--doc-source 'hover)
+                                    (vortel-lsp--doc-clear))))
+                            (setq vortel-lsp--hover-request-point nil)
+                            (when (eq vortel-lsp--doc-source 'hover)
+                              (vortel-lsp--doc-clear)))))))))
+               :on-error
+               (lambda (_err)
+                 (vortel-lsp--with-live-buffer
+                  buffer
+                  (lambda ()
+                    (when (eq (point) point-now)
+                      (setq vortel-lsp--hover-request-point nil)))))))))))))
 
 (defun vortel-lsp--hover-contents-to-string (contents)
   "Render hover CONTENTS into a message-friendly string."
@@ -1154,6 +1350,51 @@ REPORT-FN is retained and reused on incoming diagnostics."
      "\n\n"))
    (t
     (format "%s" contents))))
+
+(defun vortel-lsp--auto-hover-fire ()
+  "Compatibility wrapper for the old idle timer pathway."
+  (vortel-lsp--auto-hover-request-at-point))
+
+(defun vortel-lsp--auto-hover-schedule (&optional force)
+  "Schedule an idle hover request for the current point.
+When FORCE is non-nil, bypass duplicate-point suppression."
+  (when vortel-lsp--hover-idle-timer
+    (cancel-timer vortel-lsp--hover-idle-timer)
+    (setq vortel-lsp--hover-idle-timer nil))
+  (let ((buffer (current-buffer))
+        (point-now (point))
+        (delay (max 0.0 (or vortel-lsp-auto-hover-delay 0.0))))
+    (setq vortel-lsp--hover-idle-timer
+          (run-with-idle-timer
+           delay
+           nil
+           (lambda ()
+             (vortel-lsp--with-live-buffer
+              buffer
+              (lambda ()
+                (setq vortel-lsp--hover-idle-timer nil)
+                (when (and vortel-lsp-mode
+                           vortel-lsp-auto-hover
+                           (eq (point) point-now)
+                           (thing-at-point 'symbol)
+                           (not (vortel-lsp--inside-round-parens-p)))
+                  (vortel-lsp--auto-hover-request-at-point force)))))))))
+
+(defun vortel-lsp--auto-hover-setup ()
+  "Prepare automatic hover state for current buffer."
+  (when vortel-lsp--hover-idle-timer
+    (cancel-timer vortel-lsp--hover-idle-timer)
+    (setq vortel-lsp--hover-idle-timer nil))
+  (setq vortel-lsp--hover-last-point nil)
+  (setq vortel-lsp--hover-request-point nil))
+
+(defun vortel-lsp--auto-hover-teardown ()
+  "Remove idle timer for automatic hover."
+  (when vortel-lsp--hover-idle-timer
+    (cancel-timer vortel-lsp--hover-idle-timer)
+    (setq vortel-lsp--hover-idle-timer nil))
+  (setq vortel-lsp--hover-last-point nil)
+  (setq vortel-lsp--hover-request-point nil))
 
 (defun vortel-lsp-find-definition ()
   "Jump to definition using the xref backend integration."
@@ -1427,19 +1668,220 @@ Return plist with `:ok' and optional `:reason'."
     (or (vortel-lsp-hash-get response "items") nil))
    (t nil)))
 
+(defun vortel-lsp--completion-item-insert-text-format (item)
+  "Return insertTextFormat for completion ITEM.
+Defaults to 1 (PlainText) when omitted or invalid."
+  (let ((value (and (hash-table-p item)
+                    (vortel-lsp-hash-get item "insertTextFormat"))))
+    (if (integerp value) value 1)))
+
+(defun vortel-lsp--completion-item-snippet-text (item)
+  "Return snippet text for completion ITEM, or nil when not a snippet item."
+  (when (and (hash-table-p item)
+             (= (vortel-lsp--completion-item-insert-text-format item) 2))
+    (let* ((text-edit (vortel-lsp-hash-get item "textEdit"))
+           (new-text (and (hash-table-p text-edit)
+                          (vortel-lsp-hash-get text-edit "newText")))
+           (insert-text (vortel-lsp-hash-get item "insertText"))
+           (snippet (cond
+                     ((and (stringp new-text) (not (string-empty-p new-text))) new-text)
+                     ((and (stringp insert-text) (not (string-empty-p insert-text))) insert-text)
+                     (t nil))))
+      (and (stringp snippet) snippet))))
+
+(defun vortel-lsp--snippet-split-choice (text)
+  "Split snippet choice TEXT into values.
+TEXT is the payload between `|' delimiters in `${1|a,b|}`."
+  (let ((i 0)
+        (len (length text))
+        (current nil)
+        (parts nil))
+    (while (< i len)
+      (let ((ch (aref text i)))
+        (cond
+         ((and (= ch ?\\) (< (1+ i) len))
+          (let ((next (aref text (1+ i))))
+            (if (memq next '(?\\ ?$ ?} ?, ?|))
+                (progn
+                  (push next current)
+                  (setq i (+ i 2)))
+              (push ch current)
+              (setq i (1+ i)))))
+         ((= ch ?,)
+          (push (apply #'string (nreverse current)) parts)
+          (setq current nil
+                i (1+ i)))
+         (t
+          (push ch current)
+          (setq i (1+ i))))))
+    (push (apply #'string (nreverse current)) parts)
+    (nreverse parts)))
+
+(defun vortel-lsp--snippet-variable-value (name)
+  "Return string value for snippet variable NAME, or nil when unavailable."
+  (pcase name
+    ("TM_FILENAME" (and buffer-file-name (file-name-nondirectory buffer-file-name)))
+    ("TM_FILENAME_BASE" (and buffer-file-name (file-name-base buffer-file-name)))
+    ("TM_DIRECTORY" (and buffer-file-name (file-name-directory buffer-file-name)))
+    ("TM_FILEPATH" buffer-file-name)
+    (_ (getenv name))))
+
+(defun vortel-lsp--snippet-expand (snippet)
+  "Expand LSP SNIPPET string into plain text and cursor offset.
+Returns plist `(:text STRING :cursor-offset N)'."
+  (let ((i 0)
+        (len (length snippet))
+        (out nil)
+        (out-len 0)
+        (tabstops nil)
+        (final-stop nil))
+    (cl-labels
+        ((emit-text
+          (text)
+          (when (and (stringp text) (> (length text) 0))
+            (push text out)
+            (setq out-len (+ out-len (length text)))))
+         (record-tabstop
+          (index)
+          (cond
+           ((= index 0)
+            (unless (numberp final-stop)
+              (setq final-stop out-len)))
+           ((> index 0)
+            (let ((slot (assoc index tabstops)))
+              (if slot
+                  (setcdr slot (min (cdr slot) out-len))
+                (push (cons index out-len) tabstops))))))
+         (scan-plain
+          (text)
+          (let ((k 0)
+                (text-len (length text)))
+            (while (< k text-len)
+              (let ((ch (aref text k)))
+                (if (and (= ch ?\\) (< (1+ k) text-len))
+                    (let ((next (aref text (1+ k))))
+                      (if (memq next '(?\\ ?$ ?} ?, ?|))
+                          (progn
+                            (emit-text (string next))
+                            (setq k (+ k 2)))
+                        (emit-text (string ch))
+                        (setq k (1+ k))))
+                  (emit-text (string ch))
+                  (setq k (1+ k)))))))
+         (scan-body
+          (body)
+          (cond
+           ((string-match "\\`\\([0-9]+\\)\\'" body)
+            (record-tabstop (string-to-number (match-string 1 body))))
+           ((string-match "\\`\\([0-9]+\\):\\(.*\\)\\'" body)
+            (let ((index (string-to-number (match-string 1 body)))
+                  (default (match-string 2 body)))
+              (record-tabstop index)
+              (scan-plain default)))
+           ((string-match "\\`\\([0-9]+\\)|\\(.*\\)|\\'" body)
+            (let* ((index (string-to-number (match-string 1 body)))
+                   (raw (match-string 2 body))
+                   (choices (vortel-lsp--snippet-split-choice raw)))
+              (record-tabstop index)
+              (scan-plain (or (car choices) ""))))
+           ((string-match "\\`\\([A-Za-z_][A-Za-z0-9_]*\\):\\(.*\\)\\'" body)
+            (let ((value (vortel-lsp--snippet-variable-value (match-string 1 body)))
+                  (default (match-string 2 body)))
+              (scan-plain (or value default ""))))
+           ((string-match "\\`\\([A-Za-z_][A-Za-z0-9_]*\\)\\'" body)
+            (scan-plain (or (vortel-lsp--snippet-variable-value (match-string 1 body)) "")))
+           (t
+            (scan-plain body)))))
+      (while (< i len)
+        (let ((ch (aref snippet i)))
+          (cond
+           ((and (= ch ?\\) (< (1+ i) len))
+            (let ((next (aref snippet (1+ i))))
+              (if (memq next '(?\\ ?$ ?} ?, ?|))
+                  (progn
+                    (emit-text (string next))
+                    (setq i (+ i 2)))
+                (emit-text (string ch))
+                (setq i (1+ i)))))
+           ((and (= ch ?$) (< (1+ i) len))
+            (let ((next (aref snippet (1+ i))))
+              (cond
+               ((and (>= next ?0) (<= next ?9))
+                (let ((j (1+ i)))
+                  (while (and (< j len)
+                              (>= (aref snippet j) ?0)
+                              (<= (aref snippet j) ?9))
+                    (setq j (1+ j)))
+                  (record-tabstop
+                   (string-to-number (substring snippet (1+ i) j)))
+                  (setq i j)))
+               ((= next ?{)
+                (let* ((start (+ i 2))
+                       (j start)
+                       (closed nil))
+                  (while (and (< j len) (not closed))
+                    (if (and (= (aref snippet j) ?})
+                             (or (= j start)
+                                 (/= (aref snippet (1- j)) ?\\)))
+                        (setq closed t)
+                      (setq j (1+ j))))
+                  (if closed
+                      (progn
+                        (scan-body (substring snippet start j))
+                        (setq i (1+ j)))
+                    (emit-text "$")
+                    (setq i (1+ i)))))
+               ((or (and (>= next ?A) (<= next ?Z))
+                    (and (>= next ?a) (<= next ?z))
+                    (= next ?_))
+                (let ((j (1+ i)))
+                  (while (and (< j len)
+                              (let ((c (aref snippet j)))
+                                (or (and (>= c ?A) (<= c ?Z))
+                                    (and (>= c ?a) (<= c ?z))
+                                    (and (>= c ?0) (<= c ?9))
+                                    (= c ?_))))
+                    (setq j (1+ j)))
+                  (emit-text
+                   (or (vortel-lsp--snippet-variable-value
+                        (substring snippet (1+ i) j))
+                       ""))
+                  (setq i j)))
+               (t
+                (emit-text "$")
+                (setq i (1+ i))))))
+           (t
+            (emit-text (string ch))
+            (setq i (1+ i))))))
+      (let* ((sorted (sort (copy-sequence tabstops)
+                           (lambda (a b) (< (car a) (car b)))))
+             (cursor (cond
+                      ((consp sorted) (cdar sorted))
+                      ((numberp final-stop) final-stop)
+                      (t out-len))))
+        (list :text (apply #'concat (nreverse out))
+              :cursor-offset cursor)))))
+
 (defun vortel-lsp--completion-item-text (item)
   "Return candidate text for completion ITEM."
   (let* ((label (string-trim (or (vortel-lsp-hash-get item "label") "")))
-         (filter-text (vortel-lsp-hash-get item "filterText"))
-         (text-edit (vortel-lsp-hash-get item "textEdit"))
-         (new-text (and (hash-table-p text-edit)
-                        (vortel-lsp-hash-get text-edit "newText")))
-         (insert-text (or new-text (vortel-lsp-hash-get item "insertText"))))
+          (text-edit (vortel-lsp-hash-get item "textEdit"))
+          (new-text (and (hash-table-p text-edit)
+                         (vortel-lsp-hash-get text-edit "newText")))
+          (insert-text (vortel-lsp-hash-get item "insertText")))
     (cond
-     ((and (stringp filter-text) (not (string-empty-p filter-text))) filter-text)
-     ((not (string-empty-p label)) label)
+     ((and (stringp new-text) (not (string-empty-p new-text)))
+      (string-trim new-text))
      ((and (stringp insert-text) (not (string-empty-p insert-text)))
       (string-trim insert-text))
+     ((not (string-empty-p label))
+      (if (or (string-match-p "[[:space:]]+(" label)
+              (string-match-p "[[:space:]]+\\[" label)
+              (string-match-p "[\n\r]" label))
+          (or (and (string-match "\\`\\([[:alnum:]_.$:-]+\\)" label)
+                   (match-string 1 label))
+              label)
+        label))
      (t ""))))
 
 (defun vortel-lsp--completion-item-candidate (item client)
@@ -1449,6 +1891,103 @@ Return plist with `:ok' and optional `:reason'."
    'vortel-lsp-item item
    'vortel-lsp-client client
    'vortel-lsp-label (or (vortel-lsp-hash-get item "label") "")))
+
+(defun vortel-lsp--completion-query-at-point (start end)
+  "Return completion query text between START and point, bounded by END."
+  (let ((query-end (max start (min (point) end))))
+    (buffer-substring-no-properties start query-end)))
+
+(defun vortel-lsp--completion-subsequence-score (query candidate)
+  "Return subsequence score for QUERY against CANDIDATE, or nil.
+Higher is better. Nil means QUERY is not a subsequence of CANDIDATE."
+  (let* ((q (downcase query))
+         (c (downcase candidate))
+         (q-len (length q))
+         (c-len (length c))
+         (q-idx 0)
+         (c-idx 0)
+         (score 0)
+         (last-match -1))
+    (while (< q-idx q-len)
+      (let ((needle (aref q q-idx))
+            (found nil))
+        (while (and (< c-idx c-len) (not found))
+          (if (eq needle (aref c c-idx))
+              (setq found t)
+            (setq c-idx (1+ c-idx))))
+        (unless found
+          (setq q-idx q-len
+                score nil))
+        (when found
+          (setq score (+ score 12))
+          (if (= c-idx (1+ last-match))
+              (setq score (+ score 8))
+            (setq score (- score (min 6 (max 0 (- c-idx last-match 1))))))
+          (when (or (= c-idx 0)
+                    (and (> c-idx 0)
+                         (memq (aref c (1- c-idx)) '(?- ?_ ?. ?/))))
+            (setq score (+ score 6)))
+          (setq last-match c-idx
+                c-idx (1+ c-idx)
+                q-idx (1+ q-idx)))))
+    (when (numberp score)
+      (- score c-len))))
+
+(defvar vortel-lsp--flx-score-fn 'unset
+  "Cached flx-score function, or nil if unavailable.")
+
+(defun vortel-lsp--completion-fuzzy-score (query candidate)
+  "Return fuzzy match score for QUERY and CANDIDATE, or nil."
+  (when (eq vortel-lsp--flx-score-fn 'unset)
+    (setq vortel-lsp--flx-score-fn
+          (and (require 'flx nil t)
+               (fboundp 'flx-score)
+               #'flx-score)))
+  (if vortel-lsp--flx-score-fn
+      (funcall vortel-lsp--flx-score-fn query candidate)
+    (vortel-lsp--completion-subsequence-score query candidate)))
+
+(defun vortel-lsp--completion-sort-key (query candidate)
+  "Return sortable ranking key for CANDIDATE against QUERY."
+  (let* ((q (downcase (or query "")))
+         (text (or candidate ""))
+         (c (downcase text))
+         (prefix (and (not (string-empty-p q)) (string-prefix-p q c)))
+         (exact (and (not (string-empty-p q)) (string= q c)))
+         (fuzzy (and (not (string-empty-p q))
+                     (vortel-lsp--completion-fuzzy-score q text))))
+    (list (if exact 1 0)
+          (if prefix 1 0)
+          (if (numberp fuzzy) fuzzy -1000000)
+          (- (length text))
+          text)))
+
+(defun vortel-lsp--completion-sort-key-less-p (key-a key-b)
+  "Return non-nil when KEY-A should rank ahead of KEY-B."
+  (cond
+   ((> (nth 0 key-a) (nth 0 key-b)) t)
+   ((< (nth 0 key-a) (nth 0 key-b)) nil)
+   ((> (nth 1 key-a) (nth 1 key-b)) t)
+   ((< (nth 1 key-a) (nth 1 key-b)) nil)
+   ((> (nth 2 key-a) (nth 2 key-b)) t)
+   ((< (nth 2 key-a) (nth 2 key-b)) nil)
+   ((> (nth 3 key-a) (nth 3 key-b)) t)
+   ((< (nth 3 key-a) (nth 3 key-b)) nil)
+   (t (string-lessp (nth 4 key-a) (nth 4 key-b)))))
+
+(defun vortel-lsp--completion-sort-candidates (query candidates)
+  "Return CANDIDATES sorted by relevance to QUERY."
+  (if (or (not vortel-lsp-completion-fuzzy-sort)
+          (string-empty-p (or query "")))
+      candidates
+    (let ((decorated (mapcar (lambda (c)
+                               (cons (vortel-lsp--completion-sort-key query c) c))
+                             candidates)))
+      (mapcar #'cdr
+              (sort decorated
+                    (lambda (a b)
+                      (vortel-lsp--completion-sort-key-less-p
+                       (car a) (car b))))))))
 
 (defun vortel-lsp--completion-resolve-item (item client)
   "Return resolved completion ITEM from CLIENT when supported."
@@ -1553,10 +2092,28 @@ Applies additional text edits when provided by the server."
   (when (and (eq status 'finished)
              (stringp candidate))
     (let* ((item (get-text-property 0 'vortel-lsp-item candidate))
-            (client (get-text-property 0 'vortel-lsp-client candidate))
-            (resolved (vortel-lsp--completion-resolve-item item client))
+           (client (get-text-property 0 'vortel-lsp-client candidate))
+           (resolved (vortel-lsp--completion-resolve-item item client))
+           (snippet (or (vortel-lsp--completion-item-snippet-text resolved)
+                        (vortel-lsp--completion-item-snippet-text item)))
             (additional (and (hash-table-p resolved)
                              (vortel-lsp-hash-get resolved "additionalTextEdits"))))
+      (when (stringp snippet)
+        (condition-case err
+            (let* ((insert-end (point))
+                   (insert-start (max (point-min)
+                                      (- insert-end (length candidate))))
+                   (expansion (vortel-lsp--snippet-expand snippet))
+                   (text (or (plist-get expansion :text) ""))
+                   (cursor-offset (or (plist-get expansion :cursor-offset)
+                                      (length text))))
+              (delete-region insert-start insert-end)
+              (goto-char insert-start)
+              (insert text)
+              (goto-char (+ insert-start (min (max cursor-offset 0)
+                                              (length text)))))
+          (error
+           (vortel-lsp-log "completion snippet expansion failed: %s" err))))
       (when (and (listp additional) client)
         (condition-case err
             (vortel-lsp--apply-text-edits-in-buffer
@@ -1585,15 +2142,37 @@ Applies additional text edits when provided by the server."
        "triggerCharacter" trigger-char)
     (vortel-lsp-make-hash "triggerKind" 1)))
 
+(defun vortel-lsp--completion-item-main-edit-range (item)
+  "Return the main edit range hash-table for completion ITEM.
+Supports both TextEdit and InsertReplaceEdit forms."
+  (when (hash-table-p item)
+    (let ((text-edit (vortel-lsp-hash-get item "textEdit")))
+      (when (hash-table-p text-edit)
+        (or (vortel-lsp-hash-get text-edit "range")
+            (vortel-lsp-hash-get text-edit "replace"))))))
+
+(defun vortel-lsp--completion-item-buffer-range (item client)
+  "Return buffer range cons (START . END) for ITEM and CLIENT, or nil."
+  (when-let* ((range (vortel-lsp--completion-item-main-edit-range item))
+              (start (vortel-lsp-hash-get range "start"))
+              (end (vortel-lsp-hash-get range "end")))
+    (let* ((encoding (vortel-lsp-client-position-encoding client))
+           (beg (vortel-lsp--lsp-position-to-point start encoding))
+           (fin (vortel-lsp--lsp-position-to-point end encoding)))
+      (when (<= beg fin)
+        (cons beg fin)))))
+
 (defun vortel-lsp--completion-at-point ()
   "CAPF backend for `vortel-lsp-mode'."
   (let ((attachments (vortel-lsp--attachments-for-feature "completion")))
-    (when attachments
+    (when (and attachments
+                (not (vortel-lsp--inside-round-parens-p)))
       (let* ((bounds (or (bounds-of-thing-at-point 'symbol)
                          (cons (point) (point))))
-             (start (car bounds))
-             (end (cdr bounds))
-              (candidates nil))
+              (start (car bounds))
+              (end (cdr bounds))
+              (completion-range 'unset)
+               (candidates nil))
         (setq vortel-lsp--completion-resolve-cache (make-hash-table :test #'eq))
         (dolist (attachment attachments)
           (let* ((client (plist-get attachment :client))
@@ -1611,26 +2190,708 @@ Applies additional text edits when provided by the server."
                    "textDocument/completion"
                    params
                    vortel-lsp-completion-timeout)))
-            (when (plist-get response :ok)
-              (dolist (item (vortel-lsp--completion-items-from-response
-                             (plist-get response :result)))
-                (when (hash-table-p item)
-                  (push (vortel-lsp--completion-item-candidate item client)
-                        candidates))))))
+             (when (plist-get response :ok)
+               (dolist (item (vortel-lsp--completion-items-from-response
+                              (plist-get response :result)))
+                 (when (hash-table-p item)
+                   (let ((item-range
+                          (vortel-lsp--completion-item-buffer-range item client)))
+                     (cond
+                      ((eq completion-range 'unset)
+                       (setq completion-range (or item-range 'none)))
+                      ((or (eq completion-range 'conflict)
+                           (equal completion-range item-range))
+                       nil)
+                      (t
+                       (setq completion-range 'conflict))))
+                   (push (vortel-lsp--completion-item-candidate item client)
+                         candidates))))))
         (when candidates
-          (setq vortel-lsp--completion-candidates (nreverse candidates))
-          (list start
-                end
-                (lambda (string pred action)
-                  (if (eq action 'metadata)
-                      '(metadata (category . vortel-lsp))
-                    (complete-with-action action vortel-lsp--completion-candidates string pred)))
-                :annotation-function #'vortel-lsp--completion-annotation
-                :company-docsig #'vortel-lsp--completion-docsig
-                :company-doc-buffer #'vortel-lsp--completion-doc-buffer
-                :exit-function #'vortel-lsp--completion-exit
-                :exclusive 'no))))))
+          (let* ((use-range (and (consp completion-range)
+                                 completion-range))
+                 (capf-start (if use-range (car use-range) start))
+                 (capf-end (if use-range (cdr use-range) end)))
+            (setq vortel-lsp--completion-candidates
+                (vortel-lsp--completion-sort-candidates
+                 (vortel-lsp--completion-query-at-point capf-start capf-end)
+                  (nreverse candidates)))
+            (list capf-start
+                  capf-end
+                  (lambda (string pred action)
+                    (if (eq action 'metadata)
+                        '(metadata
+                          (category . vortel-lsp)
+                          (display-sort-function . identity)
+                          (cycle-sort-function . identity))
+                      (complete-with-action action vortel-lsp--completion-candidates string pred)))
+                  :annotation-function #'vortel-lsp--completion-annotation
+                  :exit-function #'vortel-lsp--completion-exit
+                  :exclusive 'no)))))))
 
+
+(defun vortel-lsp--markup-content-to-string (value)
+  "Extract plain text from VALUE which may be a MarkupContent or string."
+  (cond
+   ((stringp value) value)
+   ((hash-table-p value)
+    (or (vortel-lsp-hash-get value "value")
+        (format "%s" value)))
+   (t nil)))
+
+(defun vortel-lsp--signature-current-argument-region ()
+  "Return (START . END) for the current argument in `(...)` context."
+  (let ((point-now (point)))
+    (save-excursion
+      (when-let* ((open-paren (vortel-lsp--current-call-open-paren))
+                  (open-state (syntax-ppss open-paren)))
+        (let* ((target-depth (1+ (nth 0 open-state)))
+               (scan (1- point-now))
+               (start (1+ open-paren))
+               (done nil))
+          (while (and (not done)
+                      (>= scan start))
+            (let ((state (syntax-ppss scan)))
+              (cond
+               ((or (nth 3 state) (nth 4 state))
+                (setq scan (1- scan)))
+               ((and (= (nth 0 state) target-depth)
+                     (eq (char-after scan) ?,))
+                (setq start (1+ scan)
+                      done t))
+               (t
+                (setq scan (1- scan))))))
+          (cons start point-now))))))
+
+(defun vortel-lsp--signature-current-argument-name ()
+  "Return current named argument before `=' in `(...)` context, or nil."
+  (when-let* ((region (vortel-lsp--signature-current-argument-region)))
+    (let ((segment (buffer-substring-no-properties (car region) (cdr region))))
+      (when (string-match
+             "\\`[[:space:]\n]*\\([[:alpha:]_][[:alnum:]_]*\\)[[:space:]\n]*="
+             segment)
+        (match-string 1 segment)))))
+
+(defun vortel-lsp--signature-current-argument-index ()
+  "Return zero-based argument index at point in current `(...)` context."
+  (let ((point-now (point)))
+    (save-excursion
+      (when-let* ((open-paren (vortel-lsp--current-call-open-paren))
+                  (open-state (syntax-ppss open-paren)))
+        (let* ((target-depth (1+ (nth 0 open-state)))
+               (scan (1+ open-paren))
+               (index 0))
+          (while (< scan point-now)
+            (let ((state (syntax-ppss scan)))
+              (when (and (= (nth 0 state) target-depth)
+                         (not (nth 3 state))
+                         (not (nth 4 state))
+                         (eq (char-after scan) ?,))
+                (setq index (1+ index))))
+            (setq scan (1+ scan)))
+          index)))))
+
+(defun vortel-lsp--signature-extract-parameter-name (text)
+  "Extract a likely parameter name from TEXT."
+  (when (and (stringp text)
+             (not (string-empty-p text)))
+    (let ((trimmed (replace-regexp-in-string "\\`\\*\\*?" "" (string-trim text))))
+      (cond
+       ((string-match "\\([[:alpha:]_][[:alnum:]_]*\\)[[:space:]\n]*=" trimmed)
+        (match-string 1 trimmed))
+       ((string-match "\\([[:alpha:]_][[:alnum:]_]*\\)[[:space:]\n]*:" trimmed)
+        (match-string 1 trimmed))
+       ((string-match "\\_<\\([[:alpha:]_][[:alnum:]_]*\\)\\_>[[:space:]\n]*\\'" trimmed)
+        (match-string 1 trimmed))
+       ((string-match "\\_<\\([[:alpha:]_][[:alnum:]_]*\\)\\_>" trimmed)
+        (match-string 1 trimmed))
+       (t nil)))))
+
+(defun vortel-lsp--signature-parameter-label-span (signature-label parameter)
+  "Return (START . END) span for PARAMETER in SIGNATURE-LABEL, or nil."
+  (when (and (stringp signature-label)
+             (hash-table-p parameter))
+    (let ((param-label (vortel-lsp-hash-get parameter "label")))
+      (cond
+       ((and (vectorp param-label)
+             (= (length param-label) 2))
+        (let ((s (aref param-label 0))
+              (e (aref param-label 1)))
+          (when (and (integerp s)
+                     (integerp e)
+                     (<= 0 s)
+                     (< s e)
+                     (<= e (length signature-label)))
+            (cons s e))))
+       ((and (listp param-label)
+             (= (length param-label) 2)
+             (integerp (car param-label))
+             (integerp (cadr param-label)))
+        (let ((s (car param-label))
+              (e (cadr param-label)))
+          (when (and (<= 0 s)
+                     (< s e)
+                     (<= e (length signature-label)))
+            (cons s e))))
+       ((stringp param-label)
+        (or (when-let* ((pos (string-search param-label signature-label)))
+              (cons pos (+ pos (length param-label))))
+            (when-let* ((name (vortel-lsp--signature-extract-parameter-name param-label))
+                        (regexp (concat "\\_<" (regexp-quote name) "\\_>"))
+                        ((string-match regexp signature-label)))
+              (cons (match-beginning 0) (match-end 0)))))
+       (t nil)))))
+
+(defun vortel-lsp--signature-parameter-name (parameter signature-label)
+  "Return a likely parameter name for PARAMETER in SIGNATURE-LABEL."
+  (when (hash-table-p parameter)
+    (let* ((param-label (vortel-lsp-hash-get parameter "label"))
+           (label-text
+            (cond
+             ((stringp param-label)
+              param-label)
+             ((and (vectorp param-label)
+                   (= (length param-label) 2))
+              (let ((s (aref param-label 0))
+                    (e (aref param-label 1)))
+                (when (and (integerp s)
+                           (integerp e)
+                           (stringp signature-label)
+                           (<= 0 s)
+                           (< s e)
+                           (<= e (length signature-label)))
+                  (substring signature-label s e))))
+             ((and (listp param-label)
+                   (= (length param-label) 2)
+                   (integerp (car param-label))
+                   (integerp (cadr param-label)))
+              (let ((s (car param-label))
+                    (e (cadr param-label)))
+                (when (and (stringp signature-label)
+                           (<= 0 s)
+                           (< s e)
+                           (<= e (length signature-label)))
+                  (substring signature-label s e))))
+             (t nil))))
+      (vortel-lsp--signature-extract-parameter-name label-text))))
+
+(defun vortel-lsp--signature-infer-active-parameter (parameters signature-label)
+  "Infer active parameter index from point for PARAMETERS and SIGNATURE-LABEL."
+  (when (listp parameters)
+    (or
+     (when-let* ((arg-name (vortel-lsp--signature-current-argument-name)))
+       (let ((index 0)
+             (found nil))
+         (while (and (< index (length parameters))
+                     (null found))
+           (let ((param-name
+                  (vortel-lsp--signature-parameter-name
+                   (nth index parameters)
+                   signature-label)))
+             (when (and (stringp param-name)
+                        (string= param-name arg-name))
+               (setq found index)))
+           (setq index (1+ index)))
+         found))
+     (when-let* ((arg-index (vortel-lsp--signature-current-argument-index)))
+       (when (and (>= arg-index 0)
+                  (< arg-index (length parameters)))
+         arg-index)))))
+
+(defun vortel-lsp--signature-render-label (label param-start param-end)
+  "Return LABEL with active span PARAM-START..PARAM-END emphasized."
+  (if (and (integerp param-start)
+           (integerp param-end)
+           (<= 0 param-start)
+           (< param-start param-end)
+           (<= param-end (length label)))
+      (concat (substring label 0 param-start)
+              "[" (upcase (substring label param-start param-end)) "]"
+              (substring label param-end))
+    label))
+
+(defun vortel-lsp--signature-render-label-with-face (label param-start param-end)
+  "Return LABEL, highlighting PARAM-START..PARAM-END with face properties."
+  (let ((display (copy-sequence (or label ""))))
+    (when (and (integerp param-start)
+               (integerp param-end)
+               (<= 0 param-start)
+               (< param-start param-end)
+               (<= param-end (length display)))
+      (add-face-text-property
+       param-start
+       param-end
+       'vortel-lsp-signature-active-parameter-face
+       t
+       display))
+    display))
+
+(defun vortel-lsp--signature-help-parse (result)
+  "Parse SignatureHelp RESULT into a structured plist or nil.
+Returns
+(:label STRING :doc STRING-OR-NIL
+ :param-start INT-OR-NIL :param-end INT-OR-NIL)."
+  (when (hash-table-p result)
+    (let* ((signatures (vortel-lsp-hash-get result "signatures"))
+           (signatures (if (listp signatures) signatures nil)))
+      (when (and signatures (> (length signatures) 0))
+        (let* ((active-sig-index (or (vortel-lsp-hash-get result "activeSignature") 0))
+               (active-sig-index (if (and (integerp active-sig-index)
+                                          (>= active-sig-index 0)
+                                          (< active-sig-index (length signatures)))
+                                     active-sig-index
+                                   0))
+               (signature (nth active-sig-index signatures))
+               (raw-label (vortel-lsp-hash-get signature "label"))
+               (label (if (stringp raw-label)
+                          raw-label
+                        (if raw-label (format "%s" raw-label) "")))
+               (parameters (let ((items (vortel-lsp-hash-get signature "parameters")))
+                             (if (listp items) items nil)))
+               (server-active-param
+                (or (vortel-lsp-hash-get result "activeParameter")
+                    (vortel-lsp-hash-get signature "activeParameter")))
+               (active-param
+                (if (and (integerp server-active-param)
+                         (listp parameters)
+                         (>= server-active-param 0)
+                         (< server-active-param (length parameters)))
+                    server-active-param
+                  (vortel-lsp--signature-infer-active-parameter parameters label)))
+               (param-start nil)
+               (param-end nil)
+               (doc-parts nil))
+          (when (and (integerp active-param)
+                      (listp parameters)
+                      (>= active-param 0)
+                      (< active-param (length parameters)))
+            (let* ((param (nth active-param parameters))
+                   (span (vortel-lsp--signature-parameter-label-span label param)))
+              (when span
+                (setq param-start (car span)
+                      param-end (cdr span)))
+              (when (hash-table-p param)
+                (let ((param-doc (vortel-lsp--markup-content-to-string
+                                  (vortel-lsp-hash-get param "documentation"))))
+                  (when (and (stringp param-doc) (not (string-empty-p param-doc)))
+                    (push param-doc doc-parts))))))
+          (let ((sig-doc (vortel-lsp--markup-content-to-string
+                          (vortel-lsp-hash-get signature "documentation"))))
+            (when (and (stringp sig-doc) (not (string-empty-p sig-doc)))
+              (push sig-doc doc-parts)))
+          (let* ((doc-text (when doc-parts
+                             (string-join doc-parts "\n")))
+                 (doc-text (when doc-text
+                             (let ((lines (split-string doc-text "\n")))
+                               (when (> (length lines) vortel-lsp-signature-help-max-doc-lines)
+                                 (setq lines (seq-take lines vortel-lsp-signature-help-max-doc-lines)))
+                               (string-join lines "\n")))))
+            (list :label label
+                  :doc doc-text
+                  :param-start param-start
+                  :param-end param-end)))))))
+
+(defun vortel-lsp--signature-help-popup-text (parsed)
+  "Build floating signature help text from PARSED signature data."
+  (let* ((label (or (plist-get parsed :label) ""))
+         (doc (plist-get parsed :doc))
+         (display-label
+          (vortel-lsp--signature-render-label-with-face
+           label
+           (plist-get parsed :param-start)
+           (plist-get parsed :param-end))))
+    (cond
+     ((and (stringp display-label)
+           (not (string-empty-p display-label))
+           (stringp doc)
+           (not (string-empty-p doc)))
+      (concat display-label "\n\n" doc))
+     ((and (stringp display-label)
+           (not (string-empty-p display-label)))
+      display-label)
+     ((and (stringp doc)
+           (not (string-empty-p doc)))
+      doc)
+     (t nil))))
+
+(defun vortel-lsp--signature-help-format (result)
+  "Format SignatureHelp RESULT into a display string or nil."
+  (let ((parsed (vortel-lsp--signature-help-parse result)))
+    (when parsed
+      (let* ((label (or (plist-get parsed :label) ""))
+             (doc (plist-get parsed :doc))
+             (display-label
+              (vortel-lsp--signature-render-label
+               label
+               (plist-get parsed :param-start)
+               (plist-get parsed :param-end)))
+             (header (concat vortel-lsp-signature-help-echo-prefix display-label)))
+        (if doc
+            (concat header "\n" doc)
+          header)))))
+
+(defun vortel-lsp--doc-clamp (value minimum maximum)
+  "Clamp VALUE between MINIMUM and MAXIMUM."
+  (min maximum (max minimum value)))
+
+(defun vortel-lsp--doc-ceil-div (numerator denominator)
+  "Return ceiling of NUMERATOR divided by DENOMINATOR."
+  (if (<= denominator 0)
+      0
+    (/ (+ numerator denominator -1) denominator)))
+
+(defun vortel-lsp--doc-wrapped-line-count (lines content-width)
+  "Return wrapped visual line count for LINES at CONTENT-WIDTH."
+  (let ((total 0)
+        (width (max 1 content-width)))
+    (dolist (line lines total)
+      (let* ((line-width (max 1 (string-width line)))
+             (visual-lines (max 1 (vortel-lsp--doc-ceil-div line-width width))))
+        (setq total (+ total visual-lines))))))
+
+(defun vortel-lsp--doc-placement
+    (anchor-x anchor-y cursor-width cursor-height popup-width popup-height edges)
+  "Choose popup placement around cursor.
+Return plist containing `:side', `:x', and `:y'."
+  (let* ((left (nth 0 edges))
+         (top (nth 1 edges))
+         (right (nth 2 edges))
+         (bottom (nth 3 edges))
+         (gap 8)
+         (candidates
+          (list (list :side 'below
+                      :x anchor-x
+                      :y (+ anchor-y cursor-height gap))
+                (list :side 'right
+                      :x (+ anchor-x cursor-width gap)
+                      :y anchor-y)
+                (list :side 'above
+                      :x anchor-x
+                      :y (- anchor-y popup-height gap))
+                (list :side 'left
+                      :x (- anchor-x popup-width gap)
+                      :y anchor-y)))
+         (chosen
+          (cl-find-if
+           (lambda (candidate)
+             (let ((x (plist-get candidate :x))
+                   (y (plist-get candidate :y)))
+               (and (<= left x)
+                    (<= top y)
+                    (<= (+ x popup-width) right)
+                    (<= (+ y popup-height) bottom))))
+           candidates))
+         (chosen (or chosen (car candidates)))
+         (max-x (max left (- right popup-width)))
+         (max-y (max top (- bottom popup-height))))
+    (list :side (plist-get chosen :side)
+          :x (vortel-lsp--doc-clamp (plist-get chosen :x) left max-x)
+          :y (vortel-lsp--doc-clamp (plist-get chosen :y) top max-y))))
+
+(defun vortel-lsp--doc-show (doc-text &optional source)
+  "Show DOC-TEXT in a floating child frame near point.
+SOURCE tags who requested the doc (for example `hover' or `signature')."
+  (when (and (display-graphic-p)
+             (stringp doc-text)
+             (not (string-empty-p doc-text)))
+    (let ((buf (or (and (buffer-live-p vortel-lsp--doc-buffer)
+                        vortel-lsp--doc-buffer)
+                    (let ((b (generate-new-buffer " *vortel-lsp-doc*")))
+                      (with-current-buffer b
+                        (setq-local mode-line-format nil
+                                    header-line-format nil
+                                    cursor-type nil
+                                    truncate-lines nil
+                                    word-wrap t
+                                    left-fringe-width 0
+                                    right-fringe-width 0))
+                      (setq vortel-lsp--doc-buffer b)
+                      b))))
+      (with-current-buffer buf
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (insert doc-text)
+          (goto-char (point-min))
+          (setq buffer-read-only t)))
+      (let* ((window (selected-window))
+             (edges (window-inside-pixel-edges window))
+             (char-width (max 1 (frame-char-width)))
+             (char-height (max 1 (frame-char-height)))
+              (border 4)
+              (lines (split-string doc-text "\n"))
+              (line-width (max 1 (apply #'max (mapcar #'string-width lines))))
+              (available-width-px (max 1 (- (nth 2 edges) (nth 0 edges) 16 (* 2 border))))
+              (available-height-px (max 1 (- (nth 3 edges) (nth 1 edges) 16 (* 2 border))))
+              (max-width-chars (max 1 (min 96 (/ available-width-px char-width))))
+              (max-height-lines (max 1 (min 24 (/ available-height-px char-height))))
+              (width (max 1 (min (+ 2 line-width) max-width-chars)))
+              (wrapped-line-count
+               (vortel-lsp--doc-wrapped-line-count lines (max 1 (- width 2))))
+              (height (max 1 (min (+ 1 wrapped-line-count) max-height-lines)))
+              (popup-width (+ (* width char-width) (* 2 border)))
+              (popup-height (+ (* height char-height) (* 2 border)))
+             (point-pos (window-absolute-pixel-position (point)))
+             (anchor-x (or (car point-pos) (nth 0 edges)))
+             (anchor-y (or (cdr point-pos) (nth 1 edges)))
+             (placement
+              (vortel-lsp--doc-placement
+               anchor-x
+               anchor-y
+               char-width
+               char-height
+               popup-width
+               popup-height
+               edges))
+             (frame (or (and vortel-lsp--doc-frame
+                              (frame-live-p vortel-lsp--doc-frame)
+                              vortel-lsp--doc-frame)
+                        (let ((f (make-frame
+                                  `((parent-frame . ,(selected-frame))
+                                    (no-accept-focus . t)
+                                    (no-focus-on-map . t)
+                                    (min-width . 0)
+                                    (min-height . 0)
+                                    (border-width . 0)
+                                    (internal-border-width . 4)
+                                    (left-fringe . 0)
+                                    (right-fringe . 0)
+                                    (vertical-scroll-bars . nil)
+                                    (horizontal-scroll-bars . nil)
+                                    (menu-bar-lines . 0)
+                                    (tool-bar-lines . 0)
+                                    (tab-bar-lines . 0)
+                                    (undecorated . t)
+                                    (unsplittable . t)
+                                    (no-other-frame . t)
+                                    (cursor-type . nil)
+                                     (visibility . nil)
+                                     (minibuffer . nil)))))
+                           (setq vortel-lsp--doc-frame f)
+                           f))))
+        (set-window-buffer (frame-selected-window frame) buf)
+        (set-frame-parameter frame 'width width)
+        (set-frame-parameter frame 'height height)
+        (set-frame-position frame
+                            (plist-get placement :x)
+                            (plist-get placement :y))
+        (setq vortel-lsp--doc-source source)
+        (setq vortel-lsp--doc-point (point))
+        (make-frame-visible frame)))))
+
+(defun vortel-lsp--signature-clear-hint ()
+  "No-op retained for compatibility with older inline-hint behavior."
+  nil)
+
+(defun vortel-lsp--signature-show-doc (doc-text)
+  "Show signature DOC-TEXT in a floating child frame near point."
+  (vortel-lsp--doc-show doc-text 'signature))
+
+(defun vortel-lsp--doc-clear ()
+  "Hide the active floating documentation frame."
+  (when (and vortel-lsp--doc-frame
+             (frame-live-p vortel-lsp--doc-frame))
+    (make-frame-invisible vortel-lsp--doc-frame)))
+
+(defun vortel-lsp--signature-clear-doc ()
+  "Hide the signature doc child frame."
+  (vortel-lsp--doc-clear))
+
+(defun vortel-lsp--doc-destroy ()
+  "Delete the floating documentation frame and kill its buffer."
+  (when (and vortel-lsp--doc-frame
+             (frame-live-p vortel-lsp--doc-frame))
+    (delete-frame vortel-lsp--doc-frame))
+  (setq vortel-lsp--doc-frame nil)
+  (when (and vortel-lsp--doc-buffer
+             (buffer-live-p vortel-lsp--doc-buffer))
+    (kill-buffer vortel-lsp--doc-buffer))
+  (setq vortel-lsp--doc-buffer nil)
+  (setq vortel-lsp--doc-source nil)
+  (setq vortel-lsp--doc-point nil))
+
+(defun vortel-lsp--signature-destroy-doc ()
+  "Delete the signature doc child frame and kill its buffer."
+  (vortel-lsp--doc-destroy))
+
+(defun vortel-lsp--signature-clear ()
+  "Clear both inline hint and doc frame."
+  (vortel-lsp--signature-clear-hint)
+  (vortel-lsp--signature-clear-doc))
+
+(defun vortel-lsp--signature-on-scroll (_window _start)
+  "Clear signature help when the window scrolls."
+  (vortel-lsp--signature-clear)
+  (setq vortel-lsp--signature-active nil))
+
+(defun vortel-lsp--signature-on-kill-buffer ()
+  "Destroy signature doc frame when the buffer is killed."
+  (vortel-lsp--signature-destroy-doc))
+
+(defun vortel-lsp--signature-help-display (result)
+  "Display signature help from RESULT in the floating hint box."
+  (let ((parsed (vortel-lsp--signature-help-parse result)))
+    (if parsed
+        (progn
+          (setq vortel-lsp--signature-active parsed)
+          (let ((popup-text (vortel-lsp--signature-help-popup-text parsed)))
+            (if (and (stringp popup-text)
+                     (not (string-empty-p popup-text)))
+                (condition-case nil
+                    (vortel-lsp--doc-show popup-text 'signature)
+                  (error (vortel-lsp--signature-clear-doc)))
+              (vortel-lsp--signature-clear-doc))))
+      (vortel-lsp--signature-clear)
+      (setq vortel-lsp--signature-active nil))))
+
+(defun vortel-lsp--diagnostic-severity-rank (diag)
+  "Return severity rank for Flymake DIAG, lower is higher priority."
+  (pcase (flymake-diagnostic-type diag)
+    (:error 0)
+    (:warning 1)
+    (:note 2)
+    (_ 3)))
+
+(defun vortel-lsp--diagnostic-at-point-message ()
+  "Return a diagnostic message string for point, or nil."
+  (when (and vortel-lsp-enable-flymake
+             (bound-and-true-p flymake-mode))
+    (let* ((point-diags (flymake-diagnostics (point) (point)))
+           (line-diags (unless point-diags
+                         (flymake-diagnostics (line-beginning-position)
+                                              (line-end-position))))
+           (diags (or point-diags line-diags)))
+      (when diags
+        (let* ((best (car (sort (copy-sequence diags)
+                                (lambda (a b)
+                                  (< (vortel-lsp--diagnostic-severity-rank a)
+                                     (vortel-lsp--diagnostic-severity-rank b))))))
+               (text (and best (flymake-diagnostic-text best))))
+          (when (and (stringp text) (not (string-empty-p text)))
+            (concat vortel-lsp-flymake-echo-prefix text)))))))
+
+(defun vortel-lsp--ui-post-command ()
+  "Handle post-command UI updates for docs and diagnostics."
+  (when vortel-lsp-mode
+    (let* ((symbol-here (thing-at-point 'symbol))
+           (point-now (point))
+           (ppss (syntax-ppss))
+           (in-call-parens (vortel-lsp--inside-round-parens-p ppss))
+           (mouse-command (or (memq this-command '(mouse-set-point mwheel-scroll))
+                              (and this-command
+                                   (string-match-p "mouse" (symbol-name this-command))))))
+      (when (and (eq vortel-lsp--doc-source 'hover)
+                 (or in-call-parens
+                     (not symbol-here)))
+        (vortel-lsp--doc-clear)
+        (setq vortel-lsp--doc-source nil)
+        (setq vortel-lsp--doc-point nil))
+      (when (and vortel-lsp--hover-idle-timer
+                 (or in-call-parens
+                     (not symbol-here)))
+        (cancel-timer vortel-lsp--hover-idle-timer)
+        (setq vortel-lsp--hover-idle-timer nil))
+      (when (and vortel-lsp-auto-hover
+                 (not in-call-parens)
+                 symbol-here)
+          (if (or mouse-command
+                (not (eq point-now vortel-lsp--hover-last-point)))
+            (progn
+              (setq vortel-lsp--hover-last-point point-now)
+              (vortel-lsp--auto-hover-request-at-point))
+          (vortel-lsp--auto-hover-schedule)))
+      (when (and (eq vortel-lsp-signature-help-mode 'auto)
+                 (vortel-lsp--attachments-for-feature "signature-help")
+                 in-call-parens
+                 (or mouse-command
+                      (not (eq point-now vortel-lsp--signature-last-request-point))))
+        (setq vortel-lsp--signature-last-request-point point-now)
+        (vortel-lsp--signature-help-request)))
+    (when (and vortel-lsp-flymake-echo-diagnostics
+               (not (minibufferp)))
+      (let ((diag-message (vortel-lsp--diagnostic-at-point-message))
+            (point-now (point)))
+        (unless (and (equal diag-message vortel-lsp--last-diagnostic-message)
+                     (eq point-now vortel-lsp--last-diagnostic-point))
+          (setq vortel-lsp--last-diagnostic-message diag-message)
+          (setq vortel-lsp--last-diagnostic-point point-now)
+          (when diag-message
+            (message "%s" diag-message)))))))
+
+(defun vortel-lsp--signature-help-request ()
+  "Send signature help request to the first capable server."
+  (let ((attachments (vortel-lsp--attachments-for-feature "signature-help")))
+    (when attachments
+      (let ((resolved nil)
+            (buffer (current-buffer))
+            (request-point (point)))
+        (setq vortel-lsp--signature-last-request-point request-point)
+        (dolist (attachment attachments)
+          (let ((client (plist-get attachment :client)))
+            (vortel-lsp-client-request
+             client
+             "textDocument/signatureHelp"
+             (vortel-lsp--text-document-position-params client)
+             :on-success
+             (lambda (result)
+                (unless resolved
+                  (vortel-lsp--with-live-buffer
+                   buffer
+                   (lambda ()
+                     (when (and (eq request-point vortel-lsp--signature-last-request-point)
+                                (vortel-lsp--inside-round-parens-p))
+                       (setq resolved t)
+                       (vortel-lsp--signature-help-display result))))))
+              :on-error
+              (lambda (_err) nil))))))))
+
+(defun vortel-lsp-signature-help ()
+  "Request and display signature help at point."
+  (interactive)
+  (let ((attachments (vortel-lsp--attachments-for-feature "signature-help")))
+    (unless attachments
+      (user-error "no attached language server supports signature help"))
+    (vortel-lsp--signature-help-request)))
+
+(defun vortel-lsp--signature-post-command ()
+  "Post-command handler for automatic signature help."
+  (when (and vortel-lsp-mode
+             (eq vortel-lsp-signature-help-mode 'auto)
+             (vortel-lsp--attachments-for-feature "signature-help"))
+    ;; Clear when outside paren context
+    (when (and vortel-lsp--signature-active
+               (not (vortel-lsp--inside-round-parens-p)))
+      (vortel-lsp--signature-clear)
+      (setq vortel-lsp--signature-last-request-point nil)
+      (setq vortel-lsp--signature-active nil))
+    ;; Trigger on ( , with immediate request; keep debounced retrigger while active.
+     (let* ((typed-trigger
+             (and (eq this-command 'self-insert-command)
+                  (char-before)
+                  (memq (char-before) '(?\( ?,))
+                  (vortel-lsp--inside-round-parens-p)))
+            (retrigger
+             (and (not typed-trigger)
+                  vortel-lsp--signature-active
+                  (vortel-lsp--inside-round-parens-p))))
+      (when (or typed-trigger retrigger)
+        (when vortel-lsp--signature-timer
+          (cancel-timer vortel-lsp--signature-timer)
+          (setq vortel-lsp--signature-timer nil))
+        (if typed-trigger
+            (progn
+              (setq vortel-lsp--signature-last-request-point (point))
+              (vortel-lsp--signature-help-request))
+          (let ((buffer (current-buffer)))
+            (setq vortel-lsp--signature-timer
+                  (run-at-time
+                   vortel-lsp-signature-help-debounce
+                   nil
+                   (lambda ()
+                     (vortel-lsp--with-live-buffer
+                      buffer
+                       (lambda ()
+                         (setq vortel-lsp--signature-timer nil)
+                         (setq vortel-lsp--signature-last-request-point (point))
+                         (vortel-lsp--signature-help-request))))))))))))
 
 (provide 'vortel-lsp)
 

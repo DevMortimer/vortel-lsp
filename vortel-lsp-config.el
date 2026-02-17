@@ -17,10 +17,45 @@
 
 (require 'vortel-lsp-util)
 
+(defconst vortel-lsp--catalog-filename "vortel-lsp-catalog.json")
+
+(defun vortel-lsp-config--elpaca-repo-catalog (dir)
+  "Return catalog path in Elpaca repos matching build DIR, or nil.
+DIR should be the package directory currently being loaded."
+  (let* ((pkg-dir (directory-file-name (expand-file-name dir)))
+         (builds-dir (file-name-directory pkg-dir))
+         (builds-name (and builds-dir
+                           (file-name-nondirectory
+                            (directory-file-name builds-dir)))))
+    (when (string= builds-name "builds")
+      (let* ((elpaca-dir (file-name-directory
+                          (directory-file-name builds-dir)))
+             (pkg-name (file-name-nondirectory pkg-dir))
+             (repo-dir (and elpaca-dir
+                            (expand-file-name
+                             pkg-name
+                             (expand-file-name "repos" elpaca-dir))))
+             (candidate (and repo-dir
+                             (expand-file-name
+                              vortel-lsp--catalog-filename
+                              repo-dir))))
+        (when (and candidate (file-exists-p candidate))
+          candidate)))))
+
+(defun vortel-lsp-config--default-catalog-file ()
+  "Resolve default catalog path.
+Prefer the package directory, with an Elpaca builds->repos fallback."
+  (let* ((base-dir (file-name-directory
+                    (or load-file-name buffer-file-name default-directory)))
+         (local-candidate (expand-file-name
+                           vortel-lsp--catalog-filename
+                           base-dir)))
+    (or (and (file-exists-p local-candidate) local-candidate)
+        (vortel-lsp-config--elpaca-repo-catalog base-dir)
+        local-candidate)))
+
 (defcustom vortel-lsp-catalog-file
-  (expand-file-name
-   "vortel-lsp-catalog.json"
-   (file-name-directory (or load-file-name buffer-file-name default-directory)))
+  (vortel-lsp-config--default-catalog-file)
   "Path to generated `vortel-lsp-catalog.json'."
   :type 'file
   :group 'vortel-lsp)
@@ -40,13 +75,32 @@ Supported plist keys:
 (defcustom vortel-lsp-extra-servers nil
   "Extra servers to attach per language.
 Alist mapping language name strings to lists of server entry plists.
-Each entry plist requires :name and optionally :only/:except for feature filtering.
+Each entry plist requires :name and optionally :only/:except
+for feature filtering.
 
 Example:
   \\='((\"svelte\" . ((:name \"tailwindcss-ls\")))
     (\"typescript\" . ((:name \"tailwindcss-ls\"))))"
   :type '(alist :key-type string
                 :value-type (repeat (plist :key-type symbol :value-type sexp)))
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-server-settings nil
+  "Per-server workspace configuration overrides.
+Alist keyed by server name string.  Each value is an alist whose
+keys are dot-separated setting paths and values are the settings
+to return for `workspace/configuration' requests.
+
+The shape mirrors the catalog `config' field.  User values are
+deep-merged on top of catalog defaults (user wins on conflicts).
+
+Example:
+  \\='((\"typescript-language-server\"
+     . ((\"typescript.inlayHints.parameterNames.enabled\" . \"all\")))
+    (\"rust-analyzer\"
+     . ((\"rust-analyzer.checkOnSave.command\" . \"clippy\"))))"
+  :type '(alist :key-type string
+                :value-type (alist :key-type string :value-type sexp))
   :group 'vortel-lsp)
 
 (defvar vortel-lsp--catalog-cache nil)
@@ -268,6 +322,43 @@ Returns a normalized absolute directory path."
           (setq done t)
         (setq dir (vortel-lsp-config--parent-directory dir))))
     (expand-file-name (or top-marker workspace))))
+
+(defun vortel-lsp-config--deep-merge (base override)
+  "Recursively merge hash-table OVERRIDE into BASE.
+Return a new hash-table.  When both BASE and OVERRIDE have a
+hash-table value for the same key, merge recursively.
+Otherwise OVERRIDE wins."
+  (let ((result (copy-hash-table base)))
+    (maphash
+     (lambda (key val)
+       (let ((base-val (gethash key result)))
+         (if (and (hash-table-p base-val) (hash-table-p val))
+             (puthash key (vortel-lsp-config--deep-merge base-val val) result)
+           (puthash key val result))))
+     override)
+    result))
+
+(defun vortel-lsp-config-server-settings (server-name)
+  "Return resolved settings hash-table for SERVER-NAME.
+Deep-merges catalog `config' with `vortel-lsp-server-settings'
+user overrides (user wins on conflicts)."
+  (let* ((base-ht (or (vortel-lsp-hash-get
+                        (vortel-lsp-config-servers) server-name)
+                       (make-hash-table :test #'equal)))
+         (catalog-config (or (and (hash-table-p base-ht)
+                                  (vortel-lsp-hash-get base-ht "config"))
+                             (make-hash-table :test #'equal)))
+         (catalog-config (if (hash-table-p catalog-config)
+                             catalog-config
+                           (make-hash-table :test #'equal)))
+         (user-alist (alist-get server-name vortel-lsp-server-settings
+                                nil nil #'string=))
+         (user-ht (make-hash-table :test #'equal)))
+    (dolist (pair user-alist)
+      (puthash (car pair) (cdr pair) user-ht))
+    (if (> (hash-table-count user-ht) 0)
+        (vortel-lsp-config--deep-merge catalog-config user-ht)
+      (copy-hash-table catalog-config))))
 
 (provide 'vortel-lsp-config)
 
