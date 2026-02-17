@@ -111,9 +111,20 @@ Set to `manual' to only show via `vortel-lsp-signature-help'."
   :type 'boolean
   :group 'vortel-lsp)
 
-(defcustom vortel-lsp-auto-hover-delay 1.0
-  "Seconds of idle time before showing hover info at point."
+(defcustom vortel-lsp-auto-hover-delay 0.0
+  "Legacy compatibility setting for auto hover delay.
+Automatic hover now updates from command movement with no idle delay."
   :type 'number
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-flymake-echo-diagnostics t
+  "When non-nil, show Flymake diagnostics at point in the echo area."
+  :type 'boolean
+  :group 'vortel-lsp)
+
+(defcustom vortel-lsp-flymake-echo-prefix "diag: "
+  "Prefix prepended to Flymake diagnostics shown in the echo area."
+  :type 'string
   :group 'vortel-lsp)
 
 (defvar vortel-lsp-mode nil)
@@ -132,8 +143,16 @@ Set to `manual' to only show via `vortel-lsp-signature-help'."
 (defvar-local vortel-lsp--auto-completion-active nil)
 (defvar-local vortel-lsp--signature-timer nil)
 (defvar-local vortel-lsp--signature-active nil)
+(defvar-local vortel-lsp--signature-last-request-point nil)
+(defvar-local vortel-lsp--doc-frame nil)
+(defvar-local vortel-lsp--doc-buffer nil)
+(defvar-local vortel-lsp--doc-source nil)
+(defvar-local vortel-lsp--doc-point nil)
 (defvar-local vortel-lsp--hover-idle-timer nil)
 (defvar-local vortel-lsp--hover-last-point nil)
+(defvar-local vortel-lsp--hover-request-point nil)
+(defvar-local vortel-lsp--last-diagnostic-message nil)
+(defvar-local vortel-lsp--last-diagnostic-point nil)
 
 (defun vortel-lsp--buffer-uri ()
   "Return URI for current buffer file, or nil."
@@ -1056,7 +1075,10 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (when vortel-lsp--signature-timer
     (cancel-timer vortel-lsp--signature-timer)
     (setq vortel-lsp--signature-timer nil))
+  (vortel-lsp--signature-clear)
   (setq vortel-lsp--signature-active nil)
+  (setq vortel-lsp--signature-last-request-point nil)
+  (vortel-lsp--signature-destroy-doc)
   (vortel-lsp--auto-hover-teardown)
   (clrhash vortel-lsp--diagnostics))
 
@@ -1133,6 +1155,9 @@ REPORT-FN is retained and reused on incoming diagnostics."
       (flymake-mode 1))
     (when (eq vortel-lsp-signature-help-mode 'auto)
       (add-hook 'post-command-hook #'vortel-lsp--signature-post-command nil t))
+    (add-hook 'post-command-hook #'vortel-lsp--ui-post-command nil t)
+    (add-hook 'window-scroll-functions #'vortel-lsp--signature-on-scroll nil t)
+    (add-hook 'kill-buffer-hook #'vortel-lsp--signature-on-kill-buffer nil t)
     (when vortel-lsp-auto-hover
       (vortel-lsp--auto-hover-setup)))))
 
@@ -1145,6 +1170,11 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (remove-hook 'completion-at-point-functions #'vortel-lsp--completion-at-point t)
   (remove-hook 'flymake-diagnostic-functions #'vortel-lsp--flymake-backend t)
   (remove-hook 'post-command-hook #'vortel-lsp--signature-post-command t)
+  (remove-hook 'post-command-hook #'vortel-lsp--ui-post-command t)
+  (remove-hook 'window-scroll-functions #'vortel-lsp--signature-on-scroll t)
+  (remove-hook 'kill-buffer-hook #'vortel-lsp--signature-on-kill-buffer t)
+  (vortel-lsp--signature-clear)
+  (vortel-lsp--signature-destroy-doc)
   (vortel-lsp--auto-hover-teardown)
   (vortel-lsp--cleanup-attachments))
 
@@ -1218,13 +1248,60 @@ REPORT-FN is retained and reused on incoming diagnostics."
            client
            "textDocument/hover"
            (vortel-lsp--text-document-position-params client)
-           :on-success
-           (lambda (result)
-             (unless resolved
-               (let ((contents (vortel-lsp-hash-get result "contents")))
-                 (when contents
-                   (setq resolved t)
-                   (message "%s" (vortel-lsp--hover-contents-to-string contents))))))))))))
+            :on-success
+            (lambda (result)
+              (unless resolved
+                (let ((contents (vortel-lsp-hash-get result "contents")))
+                  (when contents
+                    (let ((doc (vortel-lsp--hover-contents-to-string contents)))
+                      (when (vortel-lsp--hover-doc-useful-p doc)
+                        (setq resolved t)
+                        (vortel-lsp--doc-show doc 'hover)))))))))))))
+
+(defun vortel-lsp--hover-doc-useful-p (doc)
+  "Return non-nil when hover DOC should be shown to users."
+  (and (stringp doc)
+       (not (string-empty-p doc))
+       (not (string-match-p "\\`[[:space:]]*[Uu]nknown[[:space:]]*\\.?[[:space:]]*\\'" doc))))
+
+(defun vortel-lsp--auto-hover-request-at-point ()
+  "Request hover docs immediately for current point."
+  (when (and vortel-lsp-mode
+             vortel-lsp-auto-hover
+             (not (minibufferp))
+             (not (region-active-p))
+             (thing-at-point 'symbol)
+             (vortel-lsp--attachments-for-feature "hover"))
+    (let ((point-now (point)))
+      (unless (eq point-now vortel-lsp--hover-request-point)
+        (setq vortel-lsp--hover-request-point point-now)
+        (let ((resolved nil)
+              (buffer (current-buffer)))
+          (dolist (attachment (vortel-lsp--attachments-for-feature "hover"))
+            (let ((client (plist-get attachment :client)))
+              (vortel-lsp-client-request
+               client
+               "textDocument/hover"
+               (vortel-lsp--text-document-position-params client)
+               :on-success
+               (lambda (result)
+                 (unless resolved
+                   (vortel-lsp--with-live-buffer
+                    buffer
+                    (lambda ()
+                      (when (eq (point) point-now)
+                        (let ((contents (and result
+                                             (vortel-lsp-hash-get result "contents"))))
+                          (if contents
+                              (let ((doc (vortel-lsp--hover-contents-to-string contents)))
+                                (if (vortel-lsp--hover-doc-useful-p doc)
+                                    (progn
+                                      (setq resolved t)
+                                      (vortel-lsp--doc-show doc 'hover))
+                                  (when (eq vortel-lsp--doc-source 'hover)
+                                    (vortel-lsp--doc-clear))))
+                            (when (eq vortel-lsp--doc-source 'hover)
+                              (vortel-lsp--doc-clear)))))))))))))))))
 
 (defun vortel-lsp--hover-contents-to-string (contents)
   "Render hover CONTENTS into a message-friendly string."
@@ -1241,58 +1318,24 @@ REPORT-FN is retained and reused on incoming diagnostics."
     (format "%s" contents))))
 
 (defun vortel-lsp--auto-hover-fire ()
-  "Idle timer callback to show hover info at point."
-  (when (and vortel-lsp-mode
-             vortel-lsp-auto-hover
-             (not (minibufferp))
-             (not (region-active-p))
-             (thing-at-point 'symbol)
-             (not (eq (point) vortel-lsp--hover-last-point))
-             (vortel-lsp--attachments-for-feature "hover"))
-    (setq vortel-lsp--hover-last-point (point))
-    (let ((resolved nil)
-          (buffer (current-buffer))
-          (request-point (point)))
-      (dolist (attachment (vortel-lsp--attachments-for-feature "hover"))
-        (let ((client (plist-get attachment :client)))
-          (vortel-lsp-client-request
-           client
-           "textDocument/hover"
-           (vortel-lsp--text-document-position-params client)
-           :on-success
-           (lambda (result)
-             (unless resolved
-               (vortel-lsp--with-live-buffer
-                buffer
-                (lambda ()
-                  (when (and (eq (point) request-point)
-                             (not (current-message)))
-                    (let ((contents (and result
-                                         (vortel-lsp-hash-get result "contents"))))
-                      (when contents
-                        (setq resolved t)
-                        (message "%s"
-                                 (vortel-lsp--hover-contents-to-string
-                                  contents)))))))))))))))
+  "Compatibility wrapper for the old idle timer pathway."
+  (vortel-lsp--auto-hover-request-at-point))
 
 (defun vortel-lsp--auto-hover-setup ()
-  "Install idle timer for automatic hover in current buffer."
+  "Prepare automatic hover state for current buffer."
   (when vortel-lsp--hover-idle-timer
-    (cancel-timer vortel-lsp--hover-idle-timer))
+    (cancel-timer vortel-lsp--hover-idle-timer)
+    (setq vortel-lsp--hover-idle-timer nil))
   (setq vortel-lsp--hover-last-point nil)
-  (setq vortel-lsp--hover-idle-timer
-        (run-with-idle-timer vortel-lsp-auto-hover-delay t
-                             (let ((buf (current-buffer)))
-                               (lambda ()
-                                 (vortel-lsp--with-live-buffer
-                                  buf #'vortel-lsp--auto-hover-fire))))))
+  (setq vortel-lsp--hover-request-point nil))
 
 (defun vortel-lsp--auto-hover-teardown ()
   "Remove idle timer for automatic hover."
   (when vortel-lsp--hover-idle-timer
     (cancel-timer vortel-lsp--hover-idle-timer)
     (setq vortel-lsp--hover-idle-timer nil))
-  (setq vortel-lsp--hover-last-point nil))
+  (setq vortel-lsp--hover-last-point nil)
+  (setq vortel-lsp--hover-request-point nil))
 
 (defun vortel-lsp-find-definition ()
   "Jump to definition using the xref backend integration."
@@ -1868,8 +1911,6 @@ Applies additional text edits when provided by the server."
                         (cycle-sort-function . identity))
                     (complete-with-action action vortel-lsp--completion-candidates string pred)))
                 :annotation-function #'vortel-lsp--completion-annotation
-                :company-docsig #'vortel-lsp--completion-docsig
-                :company-doc-buffer #'vortel-lsp--completion-doc-buffer
                 :exit-function #'vortel-lsp--completion-exit
                 :exclusive 'no))))))
 
@@ -1883,8 +1924,9 @@ Applies additional text edits when provided by the server."
         (format "%s" value)))
    (t nil)))
 
-(defun vortel-lsp--signature-help-format (result)
-  "Format SignatureHelp RESULT into a display string or nil."
+(defun vortel-lsp--signature-help-parse (result)
+  "Parse SignatureHelp RESULT into a structured plist or nil.
+Returns (:label STRING :doc STRING-OR-NIL :param-start INT-OR-NIL :param-end INT-OR-NIL)."
   (when (hash-table-p result)
     (let* ((signatures (vortel-lsp-hash-get result "signatures"))
            (signatures (if (listp signatures) signatures nil)))
@@ -1900,9 +1942,10 @@ Applies additional text edits when provided by the server."
                (parameters (vortel-lsp-hash-get signature "parameters"))
                (active-param (or (vortel-lsp-hash-get result "activeParameter")
                                  (vortel-lsp-hash-get signature "activeParameter")))
-               (display-label label)
+               (param-start nil)
+               (param-end nil)
                (doc-parts nil))
-          ;; Highlight active parameter in label
+          ;; Find active parameter offsets
           (when (and (integerp active-param)
                      (listp parameters)
                      (>= active-param 0)
@@ -1910,41 +1953,30 @@ Applies additional text edits when provided by the server."
             (let* ((param (nth active-param parameters))
                    (param-label (and (hash-table-p param)
                                      (vortel-lsp-hash-get param "label"))))
-              ;; Highlight based on label type
               (cond
                ((and (vectorp param-label)
                      (= (length param-label) 2))
-                (let ((start (aref param-label 0))
-                      (end (aref param-label 1)))
-                  (when (and (integerp start) (integerp end)
-                             (<= 0 start) (< start end)
-                             (<= end (length label)))
-                    (setq display-label
-                          (concat (substring label 0 start)
-                                  "[" (upcase (substring label start end)) "]"
-                                  (substring label end))))))
+                (let ((s (aref param-label 0))
+                      (e (aref param-label 1)))
+                  (when (and (integerp s) (integerp e)
+                             (<= 0 s) (< s e)
+                             (<= e (length label)))
+                    (setq param-start s param-end e))))
                ((and (listp param-label)
                      (= (length param-label) 2)
                      (integerp (car param-label))
                      (integerp (cadr param-label)))
-                (let ((start (car param-label))
-                      (end (cadr param-label)))
-                  (when (and (<= 0 start) (< start end)
-                             (<= end (length label)))
-                    (setq display-label
-                          (concat (substring label 0 start)
-                                  "[" (upcase (substring label start end)) "]"
-                                  (substring label end))))))
+                (let ((s (car param-label))
+                      (e (cadr param-label)))
+                  (when (and (<= 0 s) (< s e)
+                             (<= e (length label)))
+                    (setq param-start s param-end e))))
                ((stringp param-label)
                 (let ((pos (string-search param-label label)))
                   (when pos
-                    (let ((start pos)
-                          (end (+ pos (length param-label))))
-                      (setq display-label
-                            (concat (substring label 0 start)
-                                    "[" (upcase (substring label start end)) "]"
-                                    (substring label end))))))))
-              ;; Save parameter documentation for later
+                    (setq param-start pos
+                          param-end (+ pos (length param-label)))))))
+              ;; Collect parameter documentation
               (when (hash-table-p param)
                 (let ((param-doc (vortel-lsp--markup-content-to-string
                                   (vortel-lsp-hash-get param "documentation"))))
@@ -1955,27 +1987,231 @@ Applies additional text edits when provided by the server."
                           (vortel-lsp-hash-get signature "documentation"))))
             (when (and (stringp sig-doc) (not (string-empty-p sig-doc)))
               (push sig-doc doc-parts)))
-          ;; Build final string (doc-parts is in reverse: sig-doc first, param-doc last)
-          (let* ((header (concat vortel-lsp-signature-help-echo-prefix display-label))
-                 (doc-text (when doc-parts
+          ;; Build doc string with truncation
+          (let* ((doc-text (when doc-parts
                              (string-join doc-parts "\n")))
                  (doc-text (when doc-text
                              (let ((lines (split-string doc-text "\n")))
                                (when (> (length lines) vortel-lsp-signature-help-max-doc-lines)
                                  (setq lines (seq-take lines vortel-lsp-signature-help-max-doc-lines)))
                                (string-join lines "\n")))))
-            (if doc-text
-                (concat header "\n" doc-text)
-              header)))))))
+            (list :label label
+                  :doc doc-text
+                  :param-start param-start
+                  :param-end param-end)))))))
+
+(defun vortel-lsp--signature-help-format (result)
+  "Format SignatureHelp RESULT into a display string or nil."
+  (let ((parsed (vortel-lsp--signature-help-parse result)))
+    (when parsed
+      (let* ((label (plist-get parsed :label))
+             (param-start (plist-get parsed :param-start))
+             (param-end (plist-get parsed :param-end))
+             (doc (plist-get parsed :doc))
+             (display-label
+              (if (and param-start param-end)
+                  (concat (substring label 0 param-start)
+                          "[" (upcase (substring label param-start param-end)) "]"
+                          (substring label param-end))
+                label))
+             (header (concat vortel-lsp-signature-help-echo-prefix display-label)))
+        (if doc
+            (concat header "\n" doc)
+          header)))))
+
+(defun vortel-lsp--doc-show (doc-text &optional source)
+  "Show DOC-TEXT in a floating child frame near point.
+SOURCE tags who requested the doc (for example `hover' or `signature')."
+  (when (and (display-graphic-p)
+             (stringp doc-text)
+             (not (string-empty-p doc-text)))
+    (let ((buf (or (and (buffer-live-p vortel-lsp--doc-buffer)
+                        vortel-lsp--doc-buffer)
+                   (let ((b (generate-new-buffer " *vortel-lsp-doc*")))
+                     (with-current-buffer b
+                       (setq-local mode-line-format nil
+                                   header-line-format nil
+                                   cursor-type nil
+                                   left-fringe-width 0
+                                   right-fringe-width 0))
+                     (setq vortel-lsp--doc-buffer b)
+                     b))))
+      (with-current-buffer buf
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (insert doc-text)
+          (goto-char (point-min))))
+      (let* ((pos (window-absolute-pixel-position (point)))
+             (x (or (car pos) 0))
+             (y (+ (or (cdr pos) 0) (default-font-height)))
+             (line-count (with-current-buffer buf
+                           (count-lines (point-min) (point-max))))
+             (line-widths (mapcar #'length (split-string doc-text "\n" t)))
+             (width (min 80 (+ 2 (if line-widths (apply #'max line-widths) 1))))
+             (height (+ 1 line-count))
+             (frame (or (and vortel-lsp--doc-frame
+                             (frame-live-p vortel-lsp--doc-frame)
+                             vortel-lsp--doc-frame)
+                        (let ((f (make-frame
+                                  `((parent-frame . ,(selected-frame))
+                                    (no-accept-focus . t)
+                                    (no-focus-on-map . t)
+                                    (min-width . 0)
+                                    (min-height . 0)
+                                    (border-width . 0)
+                                    (internal-border-width . 4)
+                                    (left-fringe . 0)
+                                    (right-fringe . 0)
+                                    (vertical-scroll-bars . nil)
+                                    (horizontal-scroll-bars . nil)
+                                    (menu-bar-lines . 0)
+                                    (tool-bar-lines . 0)
+                                    (tab-bar-lines . 0)
+                                    (undecorated . t)
+                                    (unsplittable . t)
+                                    (no-other-frame . t)
+                                    (cursor-type . nil)
+                                    (visibility . nil)
+                                    (minibuffer . nil)))))
+                          (setq vortel-lsp--doc-frame f)
+                          f))))
+        (set-frame-parameter frame 'width width)
+        (set-frame-parameter frame 'height height)
+        (set-frame-position frame x y)
+        (set-window-buffer (frame-selected-window frame) buf)
+        (setq vortel-lsp--doc-source source)
+        (setq vortel-lsp--doc-point (point))
+        (make-frame-visible frame)))))
+
+(defun vortel-lsp--signature-clear-hint ()
+  "No-op retained for compatibility with older inline-hint behavior."
+  nil)
+
+(defun vortel-lsp--signature-show-doc (doc-text)
+  "Show signature DOC-TEXT in a floating child frame near point."
+  (vortel-lsp--doc-show doc-text 'signature))
+
+(defun vortel-lsp--doc-clear ()
+  "Hide the active floating documentation frame."
+  (when (and vortel-lsp--doc-frame
+             (frame-live-p vortel-lsp--doc-frame))
+    (make-frame-invisible vortel-lsp--doc-frame)))
+
+(defun vortel-lsp--signature-clear-doc ()
+  "Hide the signature doc child frame."
+  (vortel-lsp--doc-clear))
+
+(defun vortel-lsp--doc-destroy ()
+  "Delete the floating documentation frame and kill its buffer."
+  (when (and vortel-lsp--doc-frame
+             (frame-live-p vortel-lsp--doc-frame))
+    (delete-frame vortel-lsp--doc-frame))
+  (setq vortel-lsp--doc-frame nil)
+  (when (and vortel-lsp--doc-buffer
+             (buffer-live-p vortel-lsp--doc-buffer))
+    (kill-buffer vortel-lsp--doc-buffer))
+  (setq vortel-lsp--doc-buffer nil)
+  (setq vortel-lsp--doc-source nil)
+  (setq vortel-lsp--doc-point nil))
+
+(defun vortel-lsp--signature-destroy-doc ()
+  "Delete the signature doc child frame and kill its buffer."
+  (vortel-lsp--doc-destroy))
+
+(defun vortel-lsp--signature-clear ()
+  "Clear both inline hint and doc frame."
+  (vortel-lsp--signature-clear-hint)
+  (vortel-lsp--signature-clear-doc))
+
+(defun vortel-lsp--signature-on-scroll (_window _start)
+  "Clear signature help when the window scrolls."
+  (vortel-lsp--signature-clear)
+  (setq vortel-lsp--signature-active nil))
+
+(defun vortel-lsp--signature-on-kill-buffer ()
+  "Destroy signature doc frame when the buffer is killed."
+  (vortel-lsp--signature-destroy-doc))
 
 (defun vortel-lsp--signature-help-display (result)
-  "Display formatted signature help from RESULT."
-  (let ((text (vortel-lsp--signature-help-format result)))
-    (if text
+  "Display signature help from RESULT using inline overlay and child frame."
+  (let ((parsed (vortel-lsp--signature-help-parse result)))
+    (if parsed
         (progn
-          (setq vortel-lsp--signature-active text)
-          (message "%s" text))
+          (setq vortel-lsp--signature-active parsed)
+          (let ((doc (plist-get parsed :doc)))
+            (if doc
+                (condition-case nil
+                    (vortel-lsp--doc-show doc 'signature)
+                  (error (vortel-lsp--signature-clear-doc)))
+              (vortel-lsp--signature-clear-doc))))
+      (vortel-lsp--signature-clear)
       (setq vortel-lsp--signature-active nil))))
+
+(defun vortel-lsp--diagnostic-severity-rank (diag)
+  "Return severity rank for Flymake DIAG, lower is higher priority."
+  (pcase (flymake-diagnostic-type diag)
+    (:error 0)
+    (:warning 1)
+    (:note 2)
+    (_ 3)))
+
+(defun vortel-lsp--diagnostic-at-point-message ()
+  "Return a diagnostic message string for point, or nil."
+  (when (and vortel-lsp-enable-flymake
+             (bound-and-true-p flymake-mode))
+    (let* ((point-diags (flymake-diagnostics (point) (point)))
+           (line-diags (unless point-diags
+                         (flymake-diagnostics (line-beginning-position)
+                                              (line-end-position))))
+           (diags (or point-diags line-diags)))
+      (when diags
+        (let* ((best (car (sort (copy-sequence diags)
+                                (lambda (a b)
+                                  (< (vortel-lsp--diagnostic-severity-rank a)
+                                     (vortel-lsp--diagnostic-severity-rank b))))))
+               (text (and best (flymake-diagnostic-text best))))
+          (when (and (stringp text) (not (string-empty-p text)))
+            (concat vortel-lsp-flymake-echo-prefix text)))))))
+
+(defun vortel-lsp--ui-post-command ()
+  "Handle post-command UI updates for docs and diagnostics."
+  (when vortel-lsp-mode
+    (let* ((symbol-here (thing-at-point 'symbol))
+           (point-now (point))
+           (ppss (syntax-ppss))
+           (in-arglist (> (nth 0 ppss) 0))
+           (mouse-command (or (memq this-command '(mouse-set-point mwheel-scroll))
+                              (and this-command
+                                   (string-match-p "mouse" (symbol-name this-command))))))
+      (when (and (eq vortel-lsp--doc-source 'hover)
+                 (not symbol-here)
+                 (not in-arglist))
+        (vortel-lsp--doc-clear)
+        (setq vortel-lsp--doc-source nil)
+        (setq vortel-lsp--doc-point nil))
+      (when (and vortel-lsp-auto-hover
+                 symbol-here
+                 (or mouse-command
+                     (not (eq point-now vortel-lsp--hover-last-point))))
+        (setq vortel-lsp--hover-last-point point-now)
+        (vortel-lsp--auto-hover-request-at-point))
+      (when (and (eq vortel-lsp-signature-help-mode 'auto)
+                 (vortel-lsp--attachments-for-feature "signature-help")
+                 in-arglist
+                 (or mouse-command
+                     (not (eq point-now vortel-lsp--signature-last-request-point))))
+        (setq vortel-lsp--signature-last-request-point point-now)
+        (vortel-lsp--signature-help-request)))
+    (when (and vortel-lsp-flymake-echo-diagnostics
+               (not (minibufferp)))
+      (let ((diag-message (vortel-lsp--diagnostic-at-point-message))
+            (point-now (point)))
+        (unless (and (equal diag-message vortel-lsp--last-diagnostic-message)
+                     (eq point-now vortel-lsp--last-diagnostic-point))
+          (setq vortel-lsp--last-diagnostic-message diag-message)
+          (setq vortel-lsp--last-diagnostic-point point-now)
+          (when diag-message
+            (message "%s" diag-message)))))))
 
 (defun vortel-lsp--signature-help-request ()
   "Send signature help request to the first capable server."
@@ -2016,29 +2252,38 @@ Applies additional text edits when provided by the server."
     ;; Clear when outside paren context
     (when (and vortel-lsp--signature-active
                (= 0 (nth 0 (syntax-ppss))))
+      (vortel-lsp--signature-clear)
+      (setq vortel-lsp--signature-last-request-point nil)
       (setq vortel-lsp--signature-active nil))
-    ;; Trigger on ( , or retrigger while active
-    (let ((should-trigger
-           (or (and (eq this-command 'self-insert-command)
-                    (char-before)
-                    (memq (char-before) '(?\( ?,)))
-               (and vortel-lsp--signature-active
-                    (> (nth 0 (syntax-ppss)) 0)))))
-      (when should-trigger
+    ;; Trigger on ( , with immediate request; keep debounced retrigger while active.
+    (let* ((typed-trigger
+            (and (eq this-command 'self-insert-command)
+                 (char-before)
+                 (memq (char-before) '(?\( ?,))))
+           (retrigger
+            (and (not typed-trigger)
+                 vortel-lsp--signature-active
+                 (> (nth 0 (syntax-ppss)) 0))))
+      (when (or typed-trigger retrigger)
         (when vortel-lsp--signature-timer
           (cancel-timer vortel-lsp--signature-timer)
           (setq vortel-lsp--signature-timer nil))
-        (let ((buffer (current-buffer)))
-          (setq vortel-lsp--signature-timer
-                (run-at-time
-                 vortel-lsp-signature-help-debounce
-                 nil
-                 (lambda ()
-                   (vortel-lsp--with-live-buffer
-                    buffer
-                    (lambda ()
-                      (setq vortel-lsp--signature-timer nil)
-                      (vortel-lsp--signature-help-request)))))))))))
+        (if typed-trigger
+            (progn
+              (setq vortel-lsp--signature-last-request-point (point))
+              (vortel-lsp--signature-help-request))
+          (let ((buffer (current-buffer)))
+            (setq vortel-lsp--signature-timer
+                  (run-at-time
+                   vortel-lsp-signature-help-debounce
+                   nil
+                   (lambda ()
+                     (vortel-lsp--with-live-buffer
+                      buffer
+                       (lambda ()
+                         (setq vortel-lsp--signature-timer nil)
+                         (setq vortel-lsp--signature-last-request-point (point))
+                         (vortel-lsp--signature-help-request))))))))))))
 
 (provide 'vortel-lsp)
 

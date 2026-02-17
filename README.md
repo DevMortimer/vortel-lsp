@@ -66,9 +66,10 @@ Disable a server globally:
 
 ### 6) Signature help
 
-`vortel-lsp` displays function signatures in the echo area while you type
-inside argument lists. Trigger characters `(` and `,` activate it
-automatically.
+`vortel-lsp` displays function signatures while you type inside argument
+lists. Trigger characters `(` and `,` activate it automatically, and
+signature documentation is shown in a floating frame.
+Moving or clicking inside argument lists also refreshes signature help.
 
 ```elisp
 ;; Disable auto signature help (use M-x vortel-lsp-signature-help manually)
@@ -84,4 +85,6 @@ Manual invocation: `M-x vortel-lsp-signature-help`
 
 - Keep `vortel-lsp-catalog.json` available (default: repo root).
 - Diagnostics are integrated with Flymake by default.
+- Diagnostics at point are shown in the echo area by default.
+- Hover docs are shown in a floating frame while point is on a symbol.
 - Completion is exposed through Emacs CAPF.
