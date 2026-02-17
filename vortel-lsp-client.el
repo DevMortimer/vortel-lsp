@@ -749,16 +749,22 @@ ERROR can be a hash-table payload or a message string."
   "Send textDocument/didSave notification.
 TEXT is included only when the server asks for it."
   (let* ((caps (vortel-lsp-client-capabilities client))
-         (sync-cap (vortel-lsp-hash-get caps "textDocumentSync"))
-         (save-cap (and (hash-table-p sync-cap) (vortel-lsp-hash-get sync-cap "save")))
-         (include-text
-          (and (hash-table-p save-cap)
-               (vortel-lsp-truthy-p (vortel-lsp-hash-get save-cap "includeText"))))
-         (params (vortel-lsp-make-hash
-                  "textDocument" (vortel-lsp-make-hash "uri" uri))))
-    (when include-text
-      (puthash "text" text params))
-    (vortel-lsp-client-notify client "textDocument/didSave" params)))
+          (sync-cap (vortel-lsp-hash-get caps "textDocumentSync"))
+          (save-cap (and (hash-table-p sync-cap) (vortel-lsp-hash-get sync-cap "save")))
+          (save-enabled
+           (or (numberp sync-cap)
+               (and (hash-table-p sync-cap)
+                    (or (hash-table-p save-cap)
+                        (vortel-lsp-truthy-p save-cap)))))
+          (include-text
+           (and (hash-table-p save-cap)
+                (vortel-lsp-truthy-p (vortel-lsp-hash-get save-cap "includeText"))))
+          (params (vortel-lsp-make-hash
+                   "textDocument" (vortel-lsp-make-hash "uri" uri))))
+    (when save-enabled
+      (when include-text
+        (puthash "text" text params))
+      (vortel-lsp-client-notify client "textDocument/didSave" params))))
 
 (defun vortel-lsp-client-did-close (client uri)
   "Send textDocument/didClose notification."

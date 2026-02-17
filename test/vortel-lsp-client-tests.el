@@ -291,6 +291,83 @@
     (should (= reply-id 77))
     (should (vortel-lsp-hash-get reply-result "ok"))))
 
+(ert-deftest vortel-lsp-test-client-did-save-skips-when-save-disabled ()
+  "didSave should not be sent when textDocumentSync.save is disabled."
+  (let* ((client (vortel-lsp-client--create
+                  :id 1
+                  :name "ty"
+                  :command "ty"
+                  :args '()
+                  :root-path default-directory
+                  :root-uri (vortel-lsp-path-to-uri default-directory)
+                  :initialization-options nil
+                  :timeout 1
+                  :environment nil
+                  :transport nil
+                  :state 'ready
+                  :next-request-id 0
+                  :pending (make-hash-table :test #'equal)
+                  :send-queue nil
+                  :capabilities (vortel-lsp-make-hash
+                                 "textDocumentSync"
+                                 (vortel-lsp-make-hash
+                                  "change" 2
+                                  "save" vortel-lsp--json-false))
+                  :dynamic-capabilities (make-hash-table :test #'equal)
+                  :server-info nil
+                  :notification-handlers nil
+                  :request-handlers nil
+                  :state-handlers nil))
+         (notifications nil))
+    (cl-letf (((symbol-function 'vortel-lsp-client-notify)
+               (lambda (_client method params)
+                 (push (list method params) notifications))))
+      (vortel-lsp-client-did-save client "file:///tmp/test.py" "print(1)"))
+    (should (null notifications))))
+
+(ert-deftest vortel-lsp-test-client-did-save-sends-with-optional-text ()
+  "didSave should send and include text only when includeText is set."
+  (let* ((client (vortel-lsp-client--create
+                  :id 1
+                  :name "ty"
+                  :command "ty"
+                  :args '()
+                  :root-path default-directory
+                  :root-uri (vortel-lsp-path-to-uri default-directory)
+                  :initialization-options nil
+                  :timeout 1
+                  :environment nil
+                  :transport nil
+                  :state 'ready
+                  :next-request-id 0
+                  :pending (make-hash-table :test #'equal)
+                  :send-queue nil
+                  :capabilities (vortel-lsp-make-hash
+                                 "textDocumentSync"
+                                 (vortel-lsp-make-hash
+                                  "change" 2
+                                  "save" (vortel-lsp-make-hash "includeText" t)))
+                  :dynamic-capabilities (make-hash-table :test #'equal)
+                  :server-info nil
+                  :notification-handlers nil
+                  :request-handlers nil
+                  :state-handlers nil))
+         (notifications nil)
+         (uri "file:///tmp/test.py")
+         (text "print(1)"))
+    (cl-letf (((symbol-function 'vortel-lsp-client-notify)
+               (lambda (_client method params)
+                 (push (list method params) notifications))))
+      (vortel-lsp-client-did-save client uri text))
+    (let* ((payload (car notifications))
+           (method (car payload))
+           (params (cadr payload))
+           (text-document (vortel-lsp-hash-get params "textDocument")))
+      (should (= (length notifications) 1))
+      (should (equal method "textDocument/didSave"))
+      (should (equal (vortel-lsp-hash-get text-document "uri") uri))
+      (should (equal (vortel-lsp-hash-get params "text") text)))))
+
 (provide 'vortel-lsp-client-tests)
 
 ;;; vortel-lsp-client-tests.el ends here
