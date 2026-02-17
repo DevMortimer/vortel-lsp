@@ -327,7 +327,6 @@ FN is called with (client new-state old-state)."
     "completion" (vortel-lsp-make-hash
                   "completionItem"
                   (vortel-lsp-make-hash
-                    "snippetSupport" t
                     "deprecatedSupport" t
                     "documentationFormat" (list "markdown" "plaintext")
                     "resolveSupport"
