@@ -66,9 +66,16 @@ Disable a server globally:
 
 ### 6) Signature help
 
-`vortel-lsp` displays function signatures while you type inside argument
-lists. Trigger characters `(` and `,` activate it automatically, and
-signature documentation is shown in a floating frame.
+`vortel-lsp` displays a Helix-style argument hint box while you type
+inside `(...)` argument lists. Trigger characters `(` and `,` activate
+it automatically, and the active argument is highlighted for both
+positional and named/non-positional arguments when possible.
+
+While point is inside `(...)`, LSP completion candidates are suppressed
+so the signature hint box stays visible. The floating box is placed
+below point when possible, and falls back beside or above based on
+available window space.
+
 Moving or clicking inside argument lists also refreshes signature help.
 
 ```elisp
@@ -83,7 +90,9 @@ Manual invocation: `M-x vortel-lsp-signature-help`
 
 ### 7) Notes
 
-- Keep `vortel-lsp-catalog.json` available (default: repo root).
+- Keep `vortel-lsp-catalog.json` available (default: package dir).
+- Elpaca installs are auto-detected: when loaded from `elpaca/builds`,
+  `vortel-lsp` falls back to the matching `elpaca/repos` catalog file.
 - Diagnostics are integrated with Flymake by default.
 - Diagnostics at point are shown in the echo area by default.
 - Hover docs are shown in a floating frame while point is on a symbol.

@@ -110,10 +110,53 @@
                "documentation" (vortel-lsp-make-hash
                                 "kind" "markdown"
                                 "value" "Some docs.")))
-         (result (vortel-lsp-make-hash
-                  "signatures" (list sig))))
+          (result (vortel-lsp-make-hash
+                   "signatures" (list sig))))
     (should (equal (vortel-lsp--signature-help-format result)
                    "sig: fn()\nSome docs."))))
+
+(ert-deftest vortel-lsp-test-signature-infers-active-parameter-for-named-args ()
+  "Named arguments infer active parameter when server omits activeParameter."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "fn(gamma=3")
+    (goto-char (point-max))
+    (let* ((params (list (vortel-lsp-make-hash "label" "alpha")
+                         (vortel-lsp-make-hash "label" "beta")
+                         (vortel-lsp-make-hash "label" "gamma")))
+           (sig (vortel-lsp-make-hash
+                 "label" "fn(alpha, beta, gamma)"
+                 "parameters" params))
+           (result (vortel-lsp-make-hash "signatures" (list sig))))
+      (should (equal (vortel-lsp--signature-help-format result)
+                     "sig: fn(alpha, beta, [GAMMA])")))))
+
+(ert-deftest vortel-lsp-test-signature-popup-uses-face-for-active-parameter ()
+  "Signature popup highlights the active parameter with face properties."
+  (let* ((parsed '(:label "fn(alpha, beta)" :param-start 3 :param-end 8))
+         (popup (vortel-lsp--signature-help-popup-text parsed))
+         (face (get-text-property 3 'face popup)))
+    (should (equal popup "fn(alpha, beta)"))
+    (if (listp face)
+        (should (memq 'vortel-lsp-signature-active-parameter-face face))
+      (should (eq face 'vortel-lsp-signature-active-parameter-face)))))
+
+(ert-deftest vortel-lsp-test-inside-round-parens-detects-outer-context ()
+  "Round-paren context stays active even inside nested [] or {}."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "foo(bar[0])")
+    (search-backward "0")
+    (should (vortel-lsp--inside-round-parens-p))))
+
+(ert-deftest vortel-lsp-test-doc-placement-prefers-above-when-below-does-not-fit ()
+  "Popup placement falls back to above when lower space is insufficient."
+  (let ((placement (vortel-lsp--doc-placement
+                    20 170
+                    8 16
+                    120 60
+                    '(0 0 300 200))))
+    (should (eq (plist-get placement :side) 'above))))
 
 (ert-deftest vortel-lsp-test-signature-trigger-paren ()
   "Typing `(' requests signature help immediately."
@@ -278,6 +321,26 @@
                    "value")))
         (vortel-lsp--ui-post-command)
         (should requested)))))
+
+(ert-deftest vortel-lsp-test-ui-post-command-schedules-hover-while-point-stays ()
+  "When point stays on a symbol, hover is scheduled on idle."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "value")
+    (goto-char (point-min))
+    (let ((vortel-lsp-mode t)
+          (vortel-lsp-auto-hover t)
+          (vortel-lsp--hover-last-point (point))
+          (this-command 'forward-char)
+          (scheduled nil))
+      (cl-letf (((symbol-function 'thing-at-point)
+                 (lambda (&rest _args)
+                   "value"))
+                ((symbol-function 'vortel-lsp--auto-hover-schedule)
+                 (lambda (&optional _force)
+                   (setq scheduled t))))
+        (vortel-lsp--ui-post-command)
+        (should scheduled)))))
 
 (provide 'vortel-lsp-signature-tests)
 

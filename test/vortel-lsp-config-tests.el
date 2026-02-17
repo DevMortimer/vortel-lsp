@@ -13,6 +13,40 @@
 (require 'vortel-lsp-util)
 (require 'vortel-lsp-test-helpers)
 
+;;; --- catalog path resolution ---
+
+(ert-deftest vortel-lsp-test-config-elpaca-repo-catalog-fallback ()
+  "Resolve catalog from Elpaca repos when loading from builds dir."
+  (vortel-lsp-test-with-temp-dir root
+    (let* ((build-dir (expand-file-name "elpaca/builds/vortel-lsp" root))
+           (repo-dir (expand-file-name "elpaca/repos/vortel-lsp" root))
+           (catalog (expand-file-name "vortel-lsp-catalog.json" repo-dir)))
+      (make-directory build-dir t)
+      (make-directory repo-dir t)
+      (with-temp-file catalog
+        (insert "{}"))
+      (should (equal (vortel-lsp-config--elpaca-repo-catalog build-dir)
+                     catalog)))))
+
+(ert-deftest vortel-lsp-test-config-default-catalog-prefers-local-file ()
+  "Use catalog in package dir before trying Elpaca fallback."
+  (vortel-lsp-test-with-temp-dir root
+    (let* ((build-dir (expand-file-name "elpaca/builds/vortel-lsp" root))
+           (repo-dir (expand-file-name "elpaca/repos/vortel-lsp" root))
+           (build-catalog (expand-file-name "vortel-lsp-catalog.json" build-dir))
+           (repo-catalog (expand-file-name "vortel-lsp-catalog.json" repo-dir)))
+      (make-directory build-dir t)
+      (make-directory repo-dir t)
+      (with-temp-file build-catalog
+        (insert "{}"))
+      (with-temp-file repo-catalog
+        (insert "{\"from\":\"repo\"}"))
+      (let ((load-file-name (expand-file-name "vortel-lsp-config.el" build-dir))
+            (buffer-file-name nil)
+            (default-directory root))
+        (should (equal (vortel-lsp-config--default-catalog-file)
+                       build-catalog))))))
+
 ;;; --- extra-server-to-hash conversion ---
 
 (ert-deftest vortel-lsp-test-config-extra-server-to-hash-basic ()

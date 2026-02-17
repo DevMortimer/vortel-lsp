@@ -12,6 +12,7 @@
 (require 'vortel-lsp-util)
 (require 'vortel-lsp-apply-edit-tests)
 (require 'vortel-lsp-completion-tests)
+(require 'vortel-lsp-signature-tests)
 (require 'vortel-lsp-actions-rename-tests)
 (require 'vortel-lsp-transport-tests)
 (require 'vortel-lsp-config-tests)

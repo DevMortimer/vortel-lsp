@@ -17,10 +17,45 @@
 
 (require 'vortel-lsp-util)
 
+(defconst vortel-lsp--catalog-filename "vortel-lsp-catalog.json")
+
+(defun vortel-lsp-config--elpaca-repo-catalog (dir)
+  "Return catalog path in Elpaca repos matching build DIR, or nil.
+DIR should be the package directory currently being loaded."
+  (let* ((pkg-dir (directory-file-name (expand-file-name dir)))
+         (builds-dir (file-name-directory pkg-dir))
+         (builds-name (and builds-dir
+                           (file-name-nondirectory
+                            (directory-file-name builds-dir)))))
+    (when (string= builds-name "builds")
+      (let* ((elpaca-dir (file-name-directory
+                          (directory-file-name builds-dir)))
+             (pkg-name (file-name-nondirectory pkg-dir))
+             (repo-dir (and elpaca-dir
+                            (expand-file-name
+                             pkg-name
+                             (expand-file-name "repos" elpaca-dir))))
+             (candidate (and repo-dir
+                             (expand-file-name
+                              vortel-lsp--catalog-filename
+                              repo-dir))))
+        (when (and candidate (file-exists-p candidate))
+          candidate)))))
+
+(defun vortel-lsp-config--default-catalog-file ()
+  "Resolve default catalog path.
+Prefer the package directory, with an Elpaca builds->repos fallback."
+  (let* ((base-dir (file-name-directory
+                    (or load-file-name buffer-file-name default-directory)))
+         (local-candidate (expand-file-name
+                           vortel-lsp--catalog-filename
+                           base-dir)))
+    (or (and (file-exists-p local-candidate) local-candidate)
+        (vortel-lsp-config--elpaca-repo-catalog base-dir)
+        local-candidate)))
+
 (defcustom vortel-lsp-catalog-file
-  (expand-file-name
-   "vortel-lsp-catalog.json"
-   (file-name-directory (or load-file-name buffer-file-name default-directory)))
+  (vortel-lsp-config--default-catalog-file)
   "Path to generated `vortel-lsp-catalog.json'."
   :type 'file
   :group 'vortel-lsp)

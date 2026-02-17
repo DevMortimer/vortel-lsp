@@ -24,6 +24,12 @@
     (should (equal (vortel-lsp--completion-item-text item)
                    "printf(const char *fmt, ...)"))))
 
+(ert-deftest vortel-lsp-test-completion-item-text-strips-menu-style-label-suffix ()
+  (let ((item (vortel-lsp-make-hash
+               "label" "signa (import signal)")))
+    (should (equal (vortel-lsp--completion-item-text item)
+                   "signa"))))
+
 (ert-deftest vortel-lsp-test-completion-resolve-item-caches-result ()
   (let* ((client (vortel-lsp-test-make-client))
          (item (vortel-lsp-make-hash "label" "printf"))
@@ -139,6 +145,28 @@
                    (list :ok t :result items))))
         (vortel-lsp--completion-at-point)
         (should (equal (car vortel-lsp--completion-candidates) "print"))))))
+
+(ert-deftest vortel-lsp-test-completion-at-point-suppressed-inside-round-parens ()
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "fn(arg")
+    (goto-char (point-max))
+    (let* ((client
+            (vortel-lsp-test-make-client
+             :capabilities (vortel-lsp-make-hash "completionProvider"
+                                                 (vortel-lsp-make-hash))))
+           (requested nil))
+      (cl-letf (((symbol-function 'vortel-lsp--attachments-for-feature)
+                 (lambda (feature)
+                   (if (string= feature "completion")
+                       (list (list :client client))
+                     nil)))
+                ((symbol-function 'vortel-lsp--request-sync)
+                 (lambda (&rest _args)
+                   (setq requested t)
+                   (list :ok t :result nil))))
+        (should-not (vortel-lsp--completion-at-point))
+        (should-not requested)))))
 
 (ert-deftest vortel-lsp-test-completion-request-context-uses-trigger-character ()
   (with-temp-buffer
