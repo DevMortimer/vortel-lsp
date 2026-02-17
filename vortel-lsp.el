@@ -1668,6 +1668,200 @@ Return plist with `:ok' and optional `:reason'."
     (or (vortel-lsp-hash-get response "items") nil))
    (t nil)))
 
+(defun vortel-lsp--completion-item-insert-text-format (item)
+  "Return insertTextFormat for completion ITEM.
+Defaults to 1 (PlainText) when omitted or invalid."
+  (let ((value (and (hash-table-p item)
+                    (vortel-lsp-hash-get item "insertTextFormat"))))
+    (if (integerp value) value 1)))
+
+(defun vortel-lsp--completion-item-snippet-text (item)
+  "Return snippet text for completion ITEM, or nil when not a snippet item."
+  (when (and (hash-table-p item)
+             (= (vortel-lsp--completion-item-insert-text-format item) 2))
+    (let* ((text-edit (vortel-lsp-hash-get item "textEdit"))
+           (new-text (and (hash-table-p text-edit)
+                          (vortel-lsp-hash-get text-edit "newText")))
+           (insert-text (vortel-lsp-hash-get item "insertText"))
+           (snippet (cond
+                     ((and (stringp new-text) (not (string-empty-p new-text))) new-text)
+                     ((and (stringp insert-text) (not (string-empty-p insert-text))) insert-text)
+                     (t nil))))
+      (and (stringp snippet) snippet))))
+
+(defun vortel-lsp--snippet-split-choice (text)
+  "Split snippet choice TEXT into values.
+TEXT is the payload between `|' delimiters in `${1|a,b|}`."
+  (let ((i 0)
+        (len (length text))
+        (current nil)
+        (parts nil))
+    (while (< i len)
+      (let ((ch (aref text i)))
+        (cond
+         ((and (= ch ?\\) (< (1+ i) len))
+          (let ((next (aref text (1+ i))))
+            (if (memq next '(?\\ ?$ ?} ?, ?|))
+                (progn
+                  (push next current)
+                  (setq i (+ i 2)))
+              (push ch current)
+              (setq i (1+ i)))))
+         ((= ch ?,)
+          (push (apply #'string (nreverse current)) parts)
+          (setq current nil
+                i (1+ i)))
+         (t
+          (push ch current)
+          (setq i (1+ i))))))
+    (push (apply #'string (nreverse current)) parts)
+    (nreverse parts)))
+
+(defun vortel-lsp--snippet-variable-value (name)
+  "Return string value for snippet variable NAME, or nil when unavailable."
+  (pcase name
+    ("TM_FILENAME" (and buffer-file-name (file-name-nondirectory buffer-file-name)))
+    ("TM_FILENAME_BASE" (and buffer-file-name (file-name-base buffer-file-name)))
+    ("TM_DIRECTORY" (and buffer-file-name (file-name-directory buffer-file-name)))
+    ("TM_FILEPATH" buffer-file-name)
+    (_ (getenv name))))
+
+(defun vortel-lsp--snippet-expand (snippet)
+  "Expand LSP SNIPPET string into plain text and cursor offset.
+Returns plist `(:text STRING :cursor-offset N)'."
+  (let ((i 0)
+        (len (length snippet))
+        (out nil)
+        (out-len 0)
+        (tabstops nil)
+        (final-stop nil))
+    (cl-labels
+        ((emit-text
+          (text)
+          (when (and (stringp text) (> (length text) 0))
+            (push text out)
+            (setq out-len (+ out-len (length text)))))
+         (record-tabstop
+          (index)
+          (cond
+           ((= index 0)
+            (unless (numberp final-stop)
+              (setq final-stop out-len)))
+           ((> index 0)
+            (let ((slot (assoc index tabstops)))
+              (if slot
+                  (setcdr slot (min (cdr slot) out-len))
+                (push (cons index out-len) tabstops))))))
+         (scan-plain
+          (text)
+          (let ((k 0)
+                (text-len (length text)))
+            (while (< k text-len)
+              (let ((ch (aref text k)))
+                (if (and (= ch ?\\) (< (1+ k) text-len))
+                    (let ((next (aref text (1+ k))))
+                      (if (memq next '(?\\ ?$ ?} ?, ?|))
+                          (progn
+                            (emit-text (string next))
+                            (setq k (+ k 2)))
+                        (emit-text (string ch))
+                        (setq k (1+ k))))
+                  (emit-text (string ch))
+                  (setq k (1+ k)))))))
+         (scan-body
+          (body)
+          (cond
+           ((string-match "\\`\\([0-9]+\\)\\'" body)
+            (record-tabstop (string-to-number (match-string 1 body))))
+           ((string-match "\\`\\([0-9]+\\):\\(.*\\)\\'" body)
+            (let ((index (string-to-number (match-string 1 body)))
+                  (default (match-string 2 body)))
+              (record-tabstop index)
+              (scan-plain default)))
+           ((string-match "\\`\\([0-9]+\\)|\\(.*\\)|\\'" body)
+            (let* ((index (string-to-number (match-string 1 body)))
+                   (raw (match-string 2 body))
+                   (choices (vortel-lsp--snippet-split-choice raw)))
+              (record-tabstop index)
+              (scan-plain (or (car choices) ""))))
+           ((string-match "\\`\\([A-Za-z_][A-Za-z0-9_]*\\):\\(.*\\)\\'" body)
+            (let ((value (vortel-lsp--snippet-variable-value (match-string 1 body)))
+                  (default (match-string 2 body)))
+              (scan-plain (or value default ""))))
+           ((string-match "\\`\\([A-Za-z_][A-Za-z0-9_]*\\)\\'" body)
+            (scan-plain (or (vortel-lsp--snippet-variable-value (match-string 1 body)) "")))
+           (t
+            (scan-plain body)))))
+      (while (< i len)
+        (let ((ch (aref snippet i)))
+          (cond
+           ((and (= ch ?\\) (< (1+ i) len))
+            (let ((next (aref snippet (1+ i))))
+              (if (memq next '(?\\ ?$ ?} ?, ?|))
+                  (progn
+                    (emit-text (string next))
+                    (setq i (+ i 2)))
+                (emit-text (string ch))
+                (setq i (1+ i)))))
+           ((and (= ch ?$) (< (1+ i) len))
+            (let ((next (aref snippet (1+ i))))
+              (cond
+               ((and (>= next ?0) (<= next ?9))
+                (let ((j (1+ i)))
+                  (while (and (< j len)
+                              (>= (aref snippet j) ?0)
+                              (<= (aref snippet j) ?9))
+                    (setq j (1+ j)))
+                  (record-tabstop
+                   (string-to-number (substring snippet (1+ i) j)))
+                  (setq i j)))
+               ((= next ?{)
+                (let* ((start (+ i 2))
+                       (j start)
+                       (closed nil))
+                  (while (and (< j len) (not closed))
+                    (if (and (= (aref snippet j) ?})
+                             (or (= j start)
+                                 (/= (aref snippet (1- j)) ?\\)))
+                        (setq closed t)
+                      (setq j (1+ j))))
+                  (if closed
+                      (progn
+                        (scan-body (substring snippet start j))
+                        (setq i (1+ j)))
+                    (emit-text "$")
+                    (setq i (1+ i)))))
+               ((or (and (>= next ?A) (<= next ?Z))
+                    (and (>= next ?a) (<= next ?z))
+                    (= next ?_))
+                (let ((j (1+ i)))
+                  (while (and (< j len)
+                              (let ((c (aref snippet j)))
+                                (or (and (>= c ?A) (<= c ?Z))
+                                    (and (>= c ?a) (<= c ?z))
+                                    (and (>= c ?0) (<= c ?9))
+                                    (= c ?_))))
+                    (setq j (1+ j)))
+                  (emit-text
+                   (or (vortel-lsp--snippet-variable-value
+                        (substring snippet (1+ i) j))
+                       ""))
+                  (setq i j)))
+               (t
+                (emit-text "$")
+                (setq i (1+ i))))))
+           (t
+            (emit-text (string ch))
+            (setq i (1+ i))))))
+      (let* ((sorted (sort (copy-sequence tabstops)
+                           (lambda (a b) (< (car a) (car b)))))
+             (cursor (cond
+                      ((consp sorted) (cdar sorted))
+                      ((numberp final-stop) final-stop)
+                      (t out-len))))
+        (list :text (apply #'concat (nreverse out))
+              :cursor-offset cursor)))))
+
 (defun vortel-lsp--completion-item-text (item)
   "Return candidate text for completion ITEM."
   (let* ((label (string-trim (or (vortel-lsp-hash-get item "label") "")))
@@ -1898,10 +2092,28 @@ Applies additional text edits when provided by the server."
   (when (and (eq status 'finished)
              (stringp candidate))
     (let* ((item (get-text-property 0 'vortel-lsp-item candidate))
-            (client (get-text-property 0 'vortel-lsp-client candidate))
-            (resolved (vortel-lsp--completion-resolve-item item client))
+           (client (get-text-property 0 'vortel-lsp-client candidate))
+           (resolved (vortel-lsp--completion-resolve-item item client))
+           (snippet (or (vortel-lsp--completion-item-snippet-text resolved)
+                        (vortel-lsp--completion-item-snippet-text item)))
             (additional (and (hash-table-p resolved)
                              (vortel-lsp-hash-get resolved "additionalTextEdits"))))
+      (when (stringp snippet)
+        (condition-case err
+            (let* ((insert-end (point))
+                   (insert-start (max (point-min)
+                                      (- insert-end (length candidate))))
+                   (expansion (vortel-lsp--snippet-expand snippet))
+                   (text (or (plist-get expansion :text) ""))
+                   (cursor-offset (or (plist-get expansion :cursor-offset)
+                                      (length text))))
+              (delete-region insert-start insert-end)
+              (goto-char insert-start)
+              (insert text)
+              (goto-char (+ insert-start (min (max cursor-offset 0)
+                                              (length text)))))
+          (error
+           (vortel-lsp-log "completion snippet expansion failed: %s" err))))
       (when (and (listp additional) client)
         (condition-case err
             (vortel-lsp--apply-text-edits-in-buffer
