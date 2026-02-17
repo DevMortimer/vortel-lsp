@@ -978,6 +978,11 @@ This uses syntax parsing at point in the current buffer."
   "Invoke completion at point while guarding against recursive triggers."
   (when (not vortel-lsp--auto-completion-active)
     (let ((vortel-lsp--auto-completion-active t))
+      ;; Flush pending didChange so the server sees the latest text
+      ;; before we send the completion request.
+      (when vortel-lsp--change-timer
+        (cancel-timer vortel-lsp--change-timer)
+        (vortel-lsp--flush-changes (current-buffer)))
       (condition-case err
           (cond
            ((bound-and-true-p company-mode)
