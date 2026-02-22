@@ -528,6 +528,19 @@ reply has already been sent. RESULT and ERROR follow JSON-RPC response shape."
                     (vortel-lsp-make-hash
                      "properties"
                      (list "documentation" "detail" "additionalTextEdits"))))
+    "codeAction"
+    (vortel-lsp-make-hash
+     "dynamicRegistration" t
+     "codeActionLiteralSupport"
+     (vortel-lsp-make-hash
+      "codeActionKind"
+      (vortel-lsp-make-hash
+       "valueSet"
+       (list "" "quickfix" "refactor" "refactor.extract" "refactor.inline"
+             "refactor.rewrite" "source" "source.organizeImports"))))
+    "documentSymbol" (vortel-lsp-make-hash "hierarchicalDocumentSymbolSupport" t)
+    "rename" (vortel-lsp-make-hash "dynamicRegistration" t "prepareSupport" t)
+    "inlayHint" (vortel-lsp-make-hash "dynamicRegistration" t)
      "publishDiagnostics" (vortel-lsp-make-hash "versionSupport" t))
    "window" (vortel-lsp-make-hash "workDoneProgress" t)
    "general" (vortel-lsp-make-hash

@@ -1468,6 +1468,28 @@ When FORCE is non-nil, bypass duplicate-point suppression."
   (interactive)
   (call-interactively #'xref-find-references))
 
+(defun vortel-lsp-find-type-definition ()
+  "Jump to the type definition of the symbol at point."
+  (interactive)
+  (let ((xrefs (vortel-lsp--xref-request
+                "goto-type-definition"
+                "textDocument/typeDefinition"
+                #'vortel-lsp--text-document-position-params)))
+    (if xrefs
+        (xref-pop-to-location (car xrefs) nil)
+      (user-error "no type definition found"))))
+
+(defun vortel-lsp-find-declaration ()
+  "Jump to the declaration of the symbol at point."
+  (interactive)
+  (let ((xrefs (vortel-lsp--xref-request
+                "goto-declaration"
+                "textDocument/declaration"
+                #'vortel-lsp--text-document-position-params)))
+    (if xrefs
+        (xref-pop-to-location (car xrefs) nil)
+      (user-error "no declaration found"))))
+
 (defun vortel-lsp--lsp-error-message (error)
   "Return a readable message string from LSP ERROR payload."
   (cond
@@ -1786,6 +1808,114 @@ Return plist with `:ok' and optional `:reason'."
         (message "renamed to %s" new-name)
       (user-error "rename failed: %s"
                   (or last-error "no server accepted rename")))))
+
+(defconst vortel-lsp--symbol-kind-names
+  [nil
+   "File" "Module" "Namespace" "Package" "Class" "Method" "Property" "Field"
+   "Constructor" "Enum" "Interface" "Function" "Variable" "Constant" "String"
+   "Number" "Boolean" "Array" "Object" "Key" "Null" "EnumMember" "Struct"
+   "Event" "Operator" "TypeParameter"]
+  "LSP SymbolKind names indexed by kind integer.")
+
+(defun vortel-lsp--symbol-kind-name (kind)
+  "Return display name for SymbolKind KIND integer."
+  (if (and (integerp kind)
+           (> kind 0)
+           (< kind (length vortel-lsp--symbol-kind-names)))
+      (aref vortel-lsp--symbol-kind-names kind)
+    "Symbol"))
+
+(defun vortel-lsp--flatten-document-symbols (symbols &optional prefix)
+  "Flatten hierarchical DocumentSymbol SYMBOLS into a flat list of plists.
+PREFIX is the ancestor display name, used to indent nested symbols."
+  (let (result)
+    (dolist (sym symbols)
+      (when (hash-table-p sym)
+        (let* ((name (or (vortel-lsp-hash-get sym "name") "?"))
+               (kind (vortel-lsp-hash-get sym "kind"))
+               (sel-range (vortel-lsp-hash-get sym "selectionRange"))
+               (children (vortel-lsp-hash-get sym "children"))
+               (display (if prefix (concat prefix " > " name) name)))
+          (push (list :display display
+                      :kind (vortel-lsp--symbol-kind-name kind)
+                      :range sel-range)
+                result)
+          (when (listp children)
+            (dolist (child (vortel-lsp--flatten-document-symbols children display))
+              (push child result))))))
+    (nreverse result)))
+
+(defun vortel-lsp-document-symbols ()
+  "List document symbols and jump to the selected one."
+  (interactive)
+  (let ((attachments (vortel-lsp--attachments-for-feature "document-symbols")))
+    (unless attachments
+      (user-error "no attached language server supports document symbols"))
+    (let* ((attachment (car attachments))
+           (client (plist-get attachment :client))
+           (encoding (vortel-lsp-client-position-encoding client))
+           (params (vortel-lsp-make-hash
+                    "textDocument" (vortel-lsp-make-hash "uri" (vortel-lsp--buffer-uri))))
+           (response (vortel-lsp--request-sync
+                      client
+                      "textDocument/documentSymbol"
+                      params
+                      vortel-lsp-sync-request-timeout)))
+      (unless (plist-get response :ok)
+        (user-error "document symbols failed: %s"
+                    (vortel-lsp--lsp-error-message (plist-get response :error))))
+      (let ((symbols (plist-get response :result)))
+        (unless (and (listp symbols) symbols)
+          (user-error "no symbols found in this buffer"))
+        (let* ((first (car symbols))
+               (is-doc-sym (and (hash-table-p first)
+                                (vortel-lsp-hash-get first "selectionRange")))
+               (entries
+                (if is-doc-sym
+                    (vortel-lsp--flatten-document-symbols symbols)
+                  (mapcar
+                   (lambda (sym)
+                     (let* ((name (or (vortel-lsp-hash-get sym "name") "?"))
+                            (kind (vortel-lsp-hash-get sym "kind"))
+                            (location (vortel-lsp-hash-get sym "location"))
+                            (uri (and (hash-table-p location)
+                                      (vortel-lsp-hash-get location "uri")))
+                            (range (and (hash-table-p location)
+                                        (vortel-lsp-hash-get location "range"))))
+                       (list :display name
+                             :kind (vortel-lsp--symbol-kind-name kind)
+                             :uri uri
+                             :range range)))
+                   symbols))))
+          (unless entries
+            (user-error "no symbols found in this buffer"))
+          (let* ((lookup (make-hash-table :test #'equal))
+                 (seen (make-hash-table :test #'equal))
+                 (choices
+                  (mapcar
+                   (lambda (entry)
+                     (let* ((base (format "%-14s %s"
+                                          (plist-get entry :kind)
+                                          (plist-get entry :display)))
+                            (count (gethash base seen 0))
+                            (key (if (= count 0) base (format "%s <%d>" base count))))
+                       (puthash base (1+ count) seen)
+                       (puthash key entry lookup)
+                       key))
+                   entries))
+                 (selected (completing-read "Symbol: " choices nil t))
+                 (entry (gethash selected lookup)))
+            (when entry
+              (let* ((range (plist-get entry :range))
+                     (uri (plist-get entry :uri))
+                     (start (and (hash-table-p range)
+                                 (vortel-lsp-hash-get range "start"))))
+                (when start
+                  (when uri
+                    (let ((path (vortel-lsp-uri-to-path uri)))
+                      (when path
+                        (find-file path))))
+                  (goto-char (vortel-lsp--lsp-position-to-point start encoding)))))))))))
 
 (defconst vortel-lsp--completion-kind-names
   [nil
@@ -3035,10 +3165,13 @@ LABEL is a string or a list of InlayHintLabelPart objects."
             (point-now (point)))
         (unless (and (equal diag-message vortel-lsp--last-diagnostic-message)
                      (eq point-now vortel-lsp--last-diagnostic-point))
-          (setq vortel-lsp--last-diagnostic-message diag-message)
-          (setq vortel-lsp--last-diagnostic-point point-now)
-          (when diag-message
-            (message "%s" diag-message)))))))
+          (let ((prev-message vortel-lsp--last-diagnostic-message))
+            (setq vortel-lsp--last-diagnostic-message diag-message)
+            (setq vortel-lsp--last-diagnostic-point point-now)
+            (if diag-message
+                (message "%s" diag-message)
+              (when prev-message
+                (message nil)))))))))
 
 (defun vortel-lsp--signature-help-request ()
   "Send signature help request to the first capable server."
