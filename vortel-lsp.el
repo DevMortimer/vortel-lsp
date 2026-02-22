@@ -117,9 +117,19 @@ Set to 0 for immediate hover updates on cursor movement."
   :type 'number
   :group 'vortel-lsp)
 
+(defcustom vortel-lsp-format-on-save nil
+  "When non-nil, format the buffer via LSP before saving."
+  :type 'boolean
+  :group 'vortel-lsp)
+
 (defface vortel-lsp-signature-active-parameter-face
   '((t :inherit font-lock-keyword-face :weight semi-bold))
   "Face used for the active parameter in signature hints."
+  :group 'vortel-lsp)
+
+(defface vortel-lsp-inlay-hint-face
+  '((t :inherit font-lock-comment-face :slant italic))
+  "Face used for inlay hints displayed as buffer overlays."
   :group 'vortel-lsp)
 
 (defcustom vortel-lsp-flymake-echo-diagnostics t
@@ -158,6 +168,7 @@ Set to 0 for immediate hover updates on cursor movement."
 (defvar-local vortel-lsp--hover-request-point nil)
 (defvar-local vortel-lsp--last-diagnostic-message nil)
 (defvar-local vortel-lsp--last-diagnostic-point nil)
+(defvar-local vortel-lsp--inlay-hint-overlays nil)
 
 (defun vortel-lsp--buffer-uri ()
   "Return URI for current buffer file, or nil."
@@ -794,6 +805,19 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
              (find-file-other-window path)
              (funcall reply (vortel-lsp-make-hash "success" t)))
          (funcall reply (vortel-lsp-make-hash "success" vortel-lsp--json-false)))))
+    ("window/showMessageRequest"
+     (let* ((msg (or (vortel-lsp-hash-get params "message") ""))
+            (actions (vortel-lsp-hash-get params "actions"))
+            (prompt (format "[%s] %s" (vortel-lsp-client-name client) msg)))
+       (if (and (listp actions) actions)
+           (let* ((titles (mapcar (lambda (a)
+                                    (or (vortel-lsp-hash-get a "title") ""))
+                                  actions))
+                  (selected (completing-read (concat prompt "
+> ") titles nil t)))
+             (funcall reply (vortel-lsp-make-hash "title" selected)))
+         (message "%s" prompt)
+         (funcall reply nil))))
     (_
      (funcall reply nil
               (vortel-lsp-make-hash
@@ -864,6 +888,33 @@ ID, METHOD, PARAMS, and REPLY are defined by `vortel-lsp-client'."
   (pcase method
     ("textDocument/publishDiagnostics"
      (vortel-lsp--handle-publish-diagnostics client params))
+    ("$/progress"
+     (when (hash-table-p params)
+       (let* ((value (vortel-lsp-hash-get params "value"))
+              (token (vortel-lsp-hash-get params "token")))
+         (when (hash-table-p value)
+           (let ((kind (vortel-lsp-hash-get value "kind"))
+                 (title (vortel-lsp-hash-get value "title"))
+                 (msg (vortel-lsp-hash-get value "message"))
+                 (pct (vortel-lsp-hash-get value "percentage")))
+             (pcase kind
+               ("begin"
+                (vortel-lsp-log "[%s] progress begin [%s]: %s"
+                                (vortel-lsp-client-name client)
+                                (or token "")
+                                (or title msg "")))
+               ("report"
+                (when (or msg pct)
+                  (vortel-lsp-log "[%s] progress [%s]: %s%s"
+                                  (vortel-lsp-client-name client)
+                                  (or token "")
+                                  (or msg "")
+                                  (if (numberp pct) (format " (%d%%)" pct) ""))))
+               ("end"
+                (vortel-lsp-log "[%s] progress end [%s]: %s"
+                                (vortel-lsp-client-name client)
+                                (or token "")
+                                (or msg "")))))))))
     ("window/showMessage"
      (message "[%s] %s"
               (vortel-lsp-client-name client)
@@ -1101,6 +1152,7 @@ REPORT-FN is retained and reused on incoming diagnostics."
   (setq vortel-lsp--signature-last-request-point nil)
   (vortel-lsp--signature-destroy-doc)
   (vortel-lsp--auto-hover-teardown)
+  (vortel-lsp--clear-inlay-hints)
   (clrhash vortel-lsp--diagnostics))
 
 (defun vortel-lsp--enable ()
@@ -1179,6 +1231,8 @@ REPORT-FN is retained and reused on incoming diagnostics."
     (add-hook 'post-command-hook #'vortel-lsp--ui-post-command nil t)
     (add-hook 'window-scroll-functions #'vortel-lsp--signature-on-scroll nil t)
     (add-hook 'kill-buffer-hook #'vortel-lsp--signature-on-kill-buffer nil t)
+    (when vortel-lsp-format-on-save
+      (add-hook 'before-save-hook #'vortel-lsp--format-before-save nil t))
     (when vortel-lsp-auto-hover
       (vortel-lsp--auto-hover-setup)))))
 
@@ -1186,6 +1240,7 @@ REPORT-FN is retained and reused on incoming diagnostics."
   "Disable vortel-lsp in current buffer."
   (remove-hook 'before-change-functions #'vortel-lsp--before-change t)
   (remove-hook 'after-change-functions #'vortel-lsp--after-change t)
+  (remove-hook 'before-save-hook #'vortel-lsp--format-before-save t)
   (remove-hook 'after-save-hook #'vortel-lsp--after-save t)
   (remove-hook 'xref-backend-functions #'vortel-lsp--xref-backend t)
   (remove-hook 'completion-at-point-functions #'vortel-lsp--completion-at-point t)
@@ -1255,6 +1310,13 @@ REPORT-FN is retained and reused on incoming diagnostics."
    "goto-reference"
    "textDocument/references"
    #'vortel-lsp--text-document-references-params))
+
+(cl-defmethod xref-backend-implementations ((_backend (eql vortel-lsp)) _identifier)
+  "Return xref implementations from attached LSP servers."
+  (vortel-lsp--xref-request
+   "goto-implementation"
+   "textDocument/implementation"
+   #'vortel-lsp--text-document-position-params))
 
 (defun vortel-lsp-hover ()
   "Request and display hover info at point."
@@ -1602,6 +1664,80 @@ Return plist with `:ok' and optional `:reason'."
                         "unknown error"))))))
 
 (defalias 'vortel-lsp-code-action #'vortel-lsp-code-actions)
+
+(defun vortel-lsp-format ()
+  "Format the current buffer via textDocument/formatting."
+  (interactive)
+  (let ((attachments (vortel-lsp--attachments-for-feature "format")))
+    (unless attachments
+      (user-error "no attached language server supports formatting"))
+    (let* ((attachment (car attachments))
+           (client (plist-get attachment :client))
+           (encoding (vortel-lsp-client-position-encoding client))
+           (params
+            (vortel-lsp-make-hash
+             "textDocument" (vortel-lsp-make-hash "uri" (vortel-lsp--buffer-uri))
+             "options"
+             (vortel-lsp-make-hash
+              "tabSize" (or (and (boundp 'tab-width) tab-width) 4)
+              "insertSpaces" (if indent-tabs-mode vortel-lsp--json-false t))))
+           (response
+            (vortel-lsp--request-sync
+             client
+             "textDocument/formatting"
+             params
+             vortel-lsp-sync-request-timeout)))
+      (if (not (plist-get response :ok))
+          (user-error "format failed: %s"
+                      (vortel-lsp--lsp-error-message (plist-get response :error)))
+        (let ((edits (plist-get response :result)))
+          (cond
+           ((not (listp edits))
+            (when (called-interactively-p 'interactive)
+              (message "[vortel-lsp] buffer already formatted")))
+           ((null edits)
+            (when (called-interactively-p 'interactive)
+              (message "[vortel-lsp] buffer already formatted")))
+           (t
+            (condition-case err
+                (vortel-lsp--apply-text-edits-in-buffer
+                 (current-buffer) edits encoding)
+              (error
+               (user-error "format apply failed: %s" err))))))))))
+
+(defun vortel-lsp--format-before-save ()
+  "Format buffer via LSP when `vortel-lsp-format-on-save' is enabled."
+  (when (and vortel-lsp-mode vortel-lsp-format-on-save)
+    (condition-case err
+        (vortel-lsp-format)
+      (user-error nil)
+      (error
+       (vortel-lsp-log "format-on-save failed: %s" err)))
+    (when vortel-lsp--change-timer
+      (cancel-timer vortel-lsp--change-timer)
+      (setq vortel-lsp--change-timer nil))
+    (when vortel-lsp--pending-changes
+      (vortel-lsp--flush-changes (current-buffer)))))
+
+(defun vortel-lsp-restart-server ()
+  "Restart the language server attached to the current buffer."
+  (interactive)
+  (unless vortel-lsp-mode
+    (user-error "vortel-lsp-mode is not active in this buffer"))
+  (unless vortel-lsp--attachments
+    (user-error "no language server attached to this buffer"))
+  (let ((buffer (current-buffer)))
+    (dolist (attachment vortel-lsp--attachments)
+      (ignore-errors
+        (vortel-lsp-client-shutdown (plist-get attachment :client))))
+    (vortel-lsp-mode -1)
+    (run-at-time
+     0.5 nil
+     (lambda ()
+       (vortel-lsp--with-live-buffer
+        buffer
+        (lambda ()
+          (vortel-lsp-mode 1)))))))
 
 (defun vortel-lsp-rename-symbol (new-name)
   "Rename symbol at point to NEW-NAME via textDocument/rename."
@@ -2203,6 +2339,7 @@ Supports both TextEdit and InsertReplaceEdit forms."
                            (equal completion-range item-range))
                        nil)
                       (t
+                       (vortel-lsp-log "completion range conflict between servers, using symbol bounds")
                        (setq completion-range 'conflict))))
                    (push (vortel-lsp--completion-item-candidate item client)
                          candidates))))))
@@ -2676,6 +2813,93 @@ SOURCE tags who requested the doc (for example `hover' or `signature')."
         (setq vortel-lsp--doc-source source)
         (setq vortel-lsp--doc-point (point))
         (make-frame-visible frame)))))
+
+(defun vortel-lsp--clear-inlay-hints ()
+  "Remove all inlay hint overlays from the current buffer."
+  (mapc #'delete-overlay vortel-lsp--inlay-hint-overlays)
+  (setq vortel-lsp--inlay-hint-overlays nil))
+
+(defun vortel-lsp--inlay-hint-label-text (label)
+  "Extract display text from inlay hint LABEL.
+LABEL is a string or a list of InlayHintLabelPart objects."
+  (cond
+   ((stringp label) label)
+   ((listp label)
+    (string-join
+     (delq nil
+           (mapcar (lambda (part)
+                     (and (hash-table-p part)
+                          (vortel-lsp-hash-get part "value")))
+                   label))
+     ""))
+   (t nil)))
+
+(defun vortel-lsp--apply-inlay-hints (hints encoding)
+  "Apply HINTS as buffer overlays using position ENCODING."
+  (vortel-lsp--clear-inlay-hints)
+  (save-excursion
+    (dolist (hint hints)
+      (when (hash-table-p hint)
+        (let* ((position (vortel-lsp-hash-get hint "position"))
+               (label (vortel-lsp-hash-get hint "label"))
+               (pad-left (vortel-lsp-truthy-p (vortel-lsp-hash-get hint "paddingLeft")))
+               (pad-right (vortel-lsp-truthy-p (vortel-lsp-hash-get hint "paddingRight")))
+               (label-text (vortel-lsp--inlay-hint-label-text label)))
+          (when (and position label-text (not (string-empty-p label-text)))
+            (let* ((point (vortel-lsp--lsp-position-to-point position encoding))
+                   (display-text
+                    (propertize
+                     (concat (if pad-left " " "") label-text (if pad-right " " ""))
+                     'face 'vortel-lsp-inlay-hint-face))
+                   (ov (make-overlay point point nil t nil)))
+              (overlay-put ov 'before-string display-text)
+              (overlay-put ov 'vortel-lsp-inlay-hint t)
+              (push ov vortel-lsp--inlay-hint-overlays))))))
+  (setq vortel-lsp--inlay-hint-overlays
+        (nreverse vortel-lsp--inlay-hint-overlays))))
+
+(defun vortel-lsp-inlay-hints ()
+  "Toggle inlay hints for the current buffer."
+  (interactive)
+  (if vortel-lsp--inlay-hint-overlays
+      (progn
+        (vortel-lsp--clear-inlay-hints)
+        (message "[vortel-lsp] inlay hints disabled"))
+    (let ((attachments (vortel-lsp--attachments-for-feature "inlay-hints")))
+      (unless attachments
+        (user-error "no attached language server supports inlay hints"))
+      (let* ((attachment (car attachments))
+             (client (plist-get attachment :client))
+             (encoding (vortel-lsp-client-position-encoding client))
+             (buffer (current-buffer))
+             (params
+              (vortel-lsp-make-hash
+               "textDocument"
+               (vortel-lsp-make-hash "uri" (vortel-lsp--buffer-uri))
+               "range"
+               (vortel-lsp-make-hash
+                "start" (vortel-lsp--point-to-lsp-position (point-min) encoding)
+                "end" (vortel-lsp--point-to-lsp-position (point-max) encoding)))))
+        (vortel-lsp-client-request
+         client
+         "textDocument/inlayHint"
+         params
+         :on-success
+         (lambda (hints)
+           (vortel-lsp--with-live-buffer
+            buffer
+            (lambda ()
+              (if (and (listp hints) hints)
+                  (progn
+                    (vortel-lsp--apply-inlay-hints hints encoding)
+                    (message "[vortel-lsp] %d inlay hint%s"
+                             (length hints)
+                             (if (= (length hints) 1) "" "s")))
+                (message "[vortel-lsp] no inlay hints for this buffer")))))
+         :on-error
+         (lambda (err)
+           (message "[vortel-lsp] inlay hints failed: %s"
+                    (vortel-lsp--lsp-error-message err))))))))
 
 (defun vortel-lsp--signature-clear-hint ()
   "No-op retained for compatibility with older inline-hint behavior."

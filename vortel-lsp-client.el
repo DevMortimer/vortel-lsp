@@ -454,13 +454,19 @@ reply has already been sent. RESULT and ERROR follow JSON-RPC response shape."
   "Handle timeout for CLIENT request ID-KEY."
   (let ((entry (gethash id-key (vortel-lsp-client-pending client))))
     (when entry
-      (remhash id-key (vortel-lsp-client-pending client))
-      (when-let* ((on-error (plist-get entry :on-error)))
-        (funcall on-error
-                 (vortel-lsp-make-hash
-                  "code" -32001
-                  "message"
-                  (format "request timed out: %s" (plist-get entry :method))))))))
+      (let ((orig-id (plist-get entry :id)))
+        (remhash id-key (vortel-lsp-client-pending client))
+        (when (vortel-lsp-client-live-p client)
+          (vortel-lsp-client-notify
+           client
+           "$/cancelRequest"
+           (vortel-lsp-make-hash "id" orig-id)))
+        (when-let* ((on-error (plist-get entry :on-error)))
+          (funcall on-error
+                   (vortel-lsp-make-hash
+                    "code" -32001
+                    "message"
+                    (format "request timed out: %s" (plist-get entry :method)))))))))
 
 (defun vortel-lsp-client--handle-message (client message)
   "Handle inbound MESSAGE for CLIENT."
@@ -637,6 +643,7 @@ Return the numeric request ID."
       (puthash "params" params payload))
     (puthash id-key
              (list :method method
+                   :id id
                    :on-success on-success
                    :on-error on-error
                    :timer timer)
