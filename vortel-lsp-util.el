@@ -43,6 +43,16 @@
     (insert (apply #'format format-string args))
     (insert "\n")))
 
+(defun vortel-lsp-log-io (format-string &rest args)
+  "Append a log line built from FORMAT-STRING and ARGS when I/O logging is enabled."
+  (when vortel-lsp-log-io
+    (with-current-buffer (get-buffer-create vortel-lsp-log-buffer-name)
+      (goto-char (point-max))
+      (insert (format-time-string "%Y-%m-%d %H:%M:%S.%3N "))
+      (insert "[IO] ")
+      (insert (apply #'format format-string args))
+      (insert "\n"))))
+
 (defun vortel-lsp-json-false-p (value)
   "Return non-nil when VALUE is the JSON false sentinel."
   (eq value vortel-lsp--json-false))
@@ -101,6 +111,20 @@ When SECTION is nil or empty, return TABLE itself."
       (while (and keys current (hash-table-p current))
         (setq current (gethash (pop keys) current)))
       (if keys nil current))))
+
+(defun vortel-lsp-hash-keys (table)
+  "Return list of keys in hash TABLE."
+  (when (hash-table-p table)
+    (let (keys)
+      (maphash (lambda (k _v) (push k keys)) table)
+      keys)))
+
+(defun vortel-lsp-hash-values (table)
+  "Return list of values in hash TABLE."
+  (when (hash-table-p table)
+    (let (values)
+      (maphash (lambda (_k v) (push v values)) table)
+      values)))
 
 (provide 'vortel-lsp-util)
 

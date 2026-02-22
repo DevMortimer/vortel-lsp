@@ -491,7 +491,7 @@ reply has already been sent. RESULT and ERROR follow JSON-RPC response shape."
   "Handle CLIENT transport exit EVENT."
   (vortel-lsp-log "server exited (%s): %s" (vortel-lsp-client-name client) event)
   (vortel-lsp-client--clear-file-watch-registrations client)
-  (let (ids)
+  (let ((ids nil))
     (maphash (lambda (k _v) (push k ids)) (vortel-lsp-client-pending client))
     (dolist (id-key ids)
       (let ((entry (gethash id-key (vortel-lsp-client-pending client))))

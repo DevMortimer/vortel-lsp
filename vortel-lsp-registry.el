@@ -61,7 +61,13 @@ This does not stop live clients."
   (interactive)
   (clrhash vortel-lsp-registry--clients)
   (clrhash vortel-lsp-registry--client-keys)
+  (clrhash vortel-lsp-registry--missing-warnings)
   (setq vortel-lsp-registry--next-id 0))
+
+(defun vortel-lsp-registry-clear-warnings ()
+  "Clear the missing-server warning cache."
+  (interactive)
+  (clrhash vortel-lsp-registry--missing-warnings))
 
 (defun vortel-lsp-registry--key (server-name root)
   "Build registry key for SERVER-NAME and ROOT."
