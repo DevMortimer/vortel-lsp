@@ -1053,7 +1053,6 @@ This uses syntax parsing at point in the current buffer."
   "Return non-nil when INSERTED-TEXT should trigger auto completion." 
   (when (and vortel-lsp-auto-completion
               vortel-lsp-enable-capf
-              (not (vortel-lsp--inside-round-parens-p))
               (or vortel-lsp-auto-completion-in-strings
                   (not (vortel-lsp--point-in-string-or-comment-p)))
               (eq this-command 'self-insert-command)
@@ -2439,8 +2438,7 @@ Supports both TextEdit and InsertReplaceEdit forms."
 (defun vortel-lsp--completion-at-point ()
   "CAPF backend for `vortel-lsp-mode'."
   (let ((attachments (vortel-lsp--attachments-for-feature "completion")))
-    (when (and attachments
-                (not (vortel-lsp--inside-round-parens-p)))
+    (when attachments
       (let* ((bounds (or (bounds-of-thing-at-point 'symbol)
                          (cons (point) (point))))
               (start (car bounds))

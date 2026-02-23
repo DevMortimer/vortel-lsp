@@ -71,10 +71,11 @@ inside `(...)` argument lists. Trigger characters `(` and `,` activate
 it automatically, and the active argument is highlighted for both
 positional and named/non-positional arguments when possible.
 
-While point is inside `(...)`, LSP completion candidates are suppressed
-so the signature hint box stays visible. The floating box is placed
-below point when possible, and falls back beside or above based on
-available window space.
+Signature hints and completion can both be used inside `(...)`.
+Typing completion trigger characters (such as `.`) still requests LSP
+candidates while the signature hint box remains available. The floating
+box is placed below point when possible, and falls back beside or above
+based on available window space.
 
 Moving or clicking inside argument lists also refreshes signature help.
 

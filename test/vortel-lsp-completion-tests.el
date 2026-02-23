@@ -264,27 +264,29 @@
           (should (equal (cons (nth 0 capf) (nth 1 capf))
                          (cons 4 8))))))))
 
-(ert-deftest vortel-lsp-test-completion-at-point-suppressed-inside-round-parens ()
+(ert-deftest vortel-lsp-test-completion-at-point-works-inside-round-parens ()
   (with-temp-buffer
     (emacs-lisp-mode)
     (insert "fn(arg")
     (goto-char (point-max))
     (let* ((client
             (vortel-lsp-test-make-client
-             :capabilities (vortel-lsp-make-hash "completionProvider"
-                                                 (vortel-lsp-make-hash))))
-           (requested nil))
+              :capabilities (vortel-lsp-make-hash "completionProvider"
+                                                  (vortel-lsp-make-hash))))
+            (requested nil))
       (cl-letf (((symbol-function 'vortel-lsp--attachments-for-feature)
                  (lambda (feature)
                    (if (string= feature "completion")
                        (list (list :client client))
                      nil)))
                 ((symbol-function 'vortel-lsp--request-sync)
-                 (lambda (&rest _args)
-                   (setq requested t)
-                   (list :ok t :result nil))))
-        (should-not (vortel-lsp--completion-at-point))
-        (should-not requested)))))
+                  (lambda (&rest _args)
+                    (setq requested t)
+                    (list :ok t
+                          :result (list (vortel-lsp-make-hash
+                                         "label" "arg1"))))))
+        (should (vortel-lsp--completion-at-point))
+        (should requested)))))
 
 (ert-deftest vortel-lsp-test-completion-request-context-uses-trigger-character ()
   (with-temp-buffer
@@ -356,7 +358,40 @@
                 ((symbol-function 'completion-at-point)
                  (lambda ()
                    (setq auto-complete-called t))))
-        (vortel-lsp--after-change 1 2 0)
+         (vortel-lsp--after-change 1 2 0)
+         (should auto-complete-called)))))
+
+(ert-deftest vortel-lsp-test-after-change-auto-completes-on-trigger-char-inside-round-parens ()
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "fn(arg")
+    (let* ((client
+            (vortel-lsp-test-make-client
+             :capabilities
+             (vortel-lsp-make-hash
+              "completionProvider"
+              (vortel-lsp-make-hash "triggerCharacters" (list ".")))))
+           (vortel-lsp-mode t)
+           (vortel-lsp-enable-capf t)
+           (vortel-lsp-auto-completion t)
+           (vortel-lsp-auto-completion-min-chars 3)
+           (vortel-lsp-auto-completion-trigger-characters t)
+           (vortel-lsp--attachments (list (list :client client
+                                              :server-entry (vortel-lsp-make-hash))))
+           (vortel-lsp--pending-changes nil)
+           (vortel-lsp--before-change-ranges nil)
+           (vortel-lsp--change-timer nil)
+           (this-command 'self-insert-command)
+           (auto-complete-called nil)
+           (beg (point-max)))
+      (goto-char beg)
+      (insert ".")
+      (cl-letf (((symbol-function 'run-at-time)
+                 (lambda (&rest _args) 'timer))
+                ((symbol-function 'completion-at-point)
+                 (lambda ()
+                   (setq auto-complete-called t))))
+        (vortel-lsp--after-change beg (point) 0)
         (should auto-complete-called)))))
 
 (ert-deftest vortel-lsp-test-after-change-no-auto-complete-in-string-by-default ()
